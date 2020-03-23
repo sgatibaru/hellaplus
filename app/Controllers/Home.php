@@ -10,10 +10,14 @@ class Home extends AdminController
 
     public function index()
 	{
-		if(!active_business()) {
-            return $this->_renderPage('admin/empty', $this->data);
+		if($bs = active_business()) {
+            if($bs->type == 'C2B') {
+                return $this->_renderPage('admin/overview', $this->data);
+            } else {
+                return $this->_renderPage('admin/b2c/overview', $this->data);
+            }
         } else {
-            return $this->_renderPage('admin/overview', $this->data);
+            return $this->_renderPage('admin/empty', $this->data);
         }
 	}
 

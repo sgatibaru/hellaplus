@@ -14,10 +14,14 @@ class Transactions extends AdminController
 
     public function index()
     {
-        if (!active_business()) {
-            return $this->_renderPage('admin/empty', $this->data);
+        if ($bs = active_business()) {
+            if($bs->type == 'C2B') {
+                return $this->_renderPage('admin/transactions', $this->data);
+            } else {
+                return $this->_renderPage('admin/b2c/transactions', $this->data);
+            }
         } else {
-            return $this->_renderPage('admin/transactions', $this->data);
+            return $this->_renderPage('admin/empty', $this->data);
         }
     }
 

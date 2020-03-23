@@ -51,6 +51,7 @@ $routes->group('admin', function($routes) {
         $routes->post('reverse/(:any)', '\App\Controllers\Transactions::reverse/$1', ['as' => 'admin.transactions.reverse']);
         $routes->post('filter', '\App\Controllers\Transactions::filter', ['as' => 'admin.transactions.filter']);
         $routes->post('reports', '\App\Controllers\Transactions::reports', ['as' => 'admin.transactions.reports']);
+        $routes->post('send-money', '\App\Controllers\Transactions::send_money', ['as' => 'admin.transactions.send_money']);
     });
     $routes->group('customers', function($routes){
         $routes->add('/', '\App\Controllers\Customers::index', ['as' => 'admin.customers']);
@@ -62,6 +63,7 @@ $routes->group('admin', function($routes) {
 
     $routes->group('paybill', function($routes) {
         $routes->add('/', '\App\Controllers\Paybill::index', ['as' => 'admin.paybill']);
+        $routes->add('settings', '\App\Controllers\Paybill::index', ['as' => 'admin.paybill.settings']);
         $routes->add('create', '\App\Controllers\Paybill::create', ['as' => 'admin.paybill.create']);
         $routes->add('delete/(:num)', '\App\Controllers\Paybill::delete/$1', ['as' => 'admin.paybill.delete']);
         $routes->add('switch/(:num)', '\App\Controllers\Paybill::switch/$1', ['as' => 'admin.paybill.switch']);

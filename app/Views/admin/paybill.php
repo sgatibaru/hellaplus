@@ -46,8 +46,8 @@ $shortcode = active_business();
                                                 <div class="col-md-12">
                                                     <label>Shortcode Type</label>
                                                     <select class="form-control select2" name="type" require="">
-                                                        <option <?php echo $shortcode->type == 'C2B' ? 'selected' : ''; ?> value="C2B">Client to Business</option>
-                                                        <option <?php echo $shortcode->type == 'B2C' ? 'selected' : ''; ?> value="B2C">Business to Client</option>
+                                                        <option <?php echo $shortcode->type == 'C2B' ? 'selected' : ''; ?> value="C2B">Client to Business (C2B)</option>
+                                                        <option <?php echo $shortcode->type == 'B2C' ? 'selected' : ''; ?> value="B2C">Business to Client (B2C)</option>
                                                     </select>
                                                 </div>
                                             </div>

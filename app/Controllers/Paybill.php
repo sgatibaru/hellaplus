@@ -9,7 +9,7 @@ class Paybill extends AdminController
     public function __construct()
     {
         parent::__construct();
-        $this->data['title'] = 'Paybill Information';
+        $this->data['title'] = 'Shortcode Settings';
     }
 
     public function index() {

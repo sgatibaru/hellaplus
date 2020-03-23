@@ -7,7 +7,9 @@
     <meta name="description" content="Income and Expense tracker for business and personal use.">
     <meta name="author" content="Simcy Creative">
     <link rel="icon" type="image/png" sizes="16x16" href="uploads/app/yv91yZHRY2MB84Y3vAnyGz89LYOBLDYm.png">
-    <title><?php echo @$title ? $title : 'Dashboard'; ?></title>
+    <title><?php use App\Models\BusinessModel;
+
+        echo @$title ? $title : 'Dashboard'; ?></title>
 
     <link href="<?php echo base_url('assets/libs/slider/css/bootstrap-slider.min.css'); ?>" rel="stylesheet"/>
     <link href="<?php echo base_url('assets/libs/daterangepicker/daterangepicker.css'); ?>" rel="stylesheet"/>
@@ -22,8 +24,9 @@
 
 
 <body>
-
-
+<?php
+$active_business = active_business();
+?>
 <header>
     <!-- Humbager -->
     <div class="humbager">
@@ -32,7 +35,8 @@
     <!-- logo -->
     <div class="branding">
         <a href="<?php echo site_url('admin'); ?>">
-            <img src="<?php echo base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png'); ?>" class="img-responsive">
+            <img src="<?php echo base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png'); ?>"
+                 class="img-responsive">
         </a>
     </div>
 
@@ -40,9 +44,11 @@
     <nav class="navigation">
         <ul class="nav navbar-nav">
             <li><a href="<?php echo site_url('admin'); ?>">Overview</a></li>
-            <li><a href="<?php echo site_url('admin/transactions'); ?>">Transactions</a></li>
+            <li>
+                <a href="<?php echo site_url('admin/transactions'); ?>"><?php echo (isset($active_business) && $active_business->type == 'B2C') ? 'Disbursements' : 'Transactions'; ?></a>
+            </li>
             <li><a href="<?php echo site_url('admin/customers'); ?>">My Customers</a></li>
-            <li><a href="<?php echo site_url('admin/paybill'); ?>">Settings</a></li>
+            <li><a href="<?php echo site_url('admin/paybill/settings'); ?>">Settings</a></li>
             <li class="close-menu"><a href="#"><i class="mdi mdi-close-circle-outline"></i> Close</a></li>
         </ul>
     </nav>
@@ -50,16 +56,25 @@
     <!-- Right content -->
     <div class="header-right">
         <div class="dropdown hidden-sm hidden-xs">
-            <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Shortcodes <span><i class="mdi mdi-arrow-down-drop-circle-outline"></i></span></button>
+            <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Shortcodes <span><i
+                            class="mdi mdi-arrow-down-drop-circle-outline"></i></span></button>
             <ul class="dropdown-menu">
-                <li role="presentation"><a role="menuitem" data-toggle="modal" data-target="#addShortcode"> <i class="mdi mdi-chevron-right"></i> New Shortcode</a></li>
+                <li role="presentation"><a role="menuitem" data-toggle="modal" data-target="#addShortcode"> <i
+                                class="mdi mdi-plus"></i> New Shortcode</a></li>
                 <?php
-                $businesses = new \App\Models\BusinessModel();
+                $businesses = new BusinessModel();
                 $businesses = $businesses->findAll();
-                if($businesses && count($businesses) > 0) {
+                if ($businesses && count($businesses) > 0) {
                     foreach ($businesses as $business) {
                         ?>
-                        <li role="presentation"><a role="menuitem" class="send-to-server-click" data="id:<?php echo $business->id; ?>|status:1" url="<?php echo site_url('admin/paybill/switch/'.$business->id); ?>" warning-title="Switching Shortcodes" warning-message="You are about to switch to <?php echo $business->name; ?>" warning-button="Continue" loader="true" > <i class="mdi mdi-switch"></i> <?php echo $business->name.' ('.$business->shortcode.')'; ?></a></li>
+                        <li role="presentation"><a role="menuitem" class="send-to-server-click"
+                                                   data="id:<?php echo $business->id; ?>|status:1"
+                                                   url="<?php echo site_url('admin/paybill/switch/' . $business->id); ?>"
+                                                   warning-title="Switching Shortcodes"
+                                                   warning-message="You are about to switch to <?php echo $business->name; ?>"
+                                                   warning-button="Continue" loader="true"> <i
+                                        class="mdi mdi-switch"></i> <?php echo $business->name . ' (' . $business->shortcode . ')'; ?>
+                            </a></li>
                         <?php
                     }
                 }
@@ -77,8 +92,10 @@
                 </span>
             </span>
             <ul class="dropdown-menu profile-menu" role="menu" aria-labelledby="menu1">
-                <li role="presentation"><a role="menuitem" href="<?php echo site_url('admin/paybill'); ?>"> <i class="mdi mdi-settings"></i> Settings</a></li>
-                <li role="presentation"><a role="menuitem" href="<?php echo site_url('auth/logout'); ?>"> <i class="mdi mdi-logout"></i> Logout</a></li>
+                <li role="presentation"><a role="menuitem" href="<?php echo site_url('admin/paybill'); ?>"> <i
+                                class="mdi mdi-settings"></i> App Settings</a></li>
+                <li role="presentation"><a role="menuitem" href="<?php echo site_url('auth/logout'); ?>"> <i
+                                class="mdi mdi-logout"></i> Logout</a></li>
             </ul>
         </div>
     </div>
@@ -87,14 +104,66 @@
 <div class="container">
     <div class="page-heading">
         <?php
-        $business = active_business();
-        if(isset($business->api_setup) && $business->api_setup != 1) {
+        if (isset($active_business->api_setup) && $active_business->type != 'B2C' && $active_business->api_setup != 1) {
             ?>
             <div>
                 <div class="alert alert-danger">
-                    No Transaction will be posted here because you have not set up the API. Click the Button on the right to setup.
+                    No Transaction will be posted here because you have not set up the API. Click the Button on the
+                    right to setup.
                 </div>
-                <button class="btn btn-primary pull-right ml-5 send-to-server-click" data="id:<?php echo $business->id; ?>|status:1" url="<?php echo site_url('admin/api/setup/'.$business->id); ?>" warning-title="API Setup" warning-message="You are about to register URLs to M-Pesa to receive transaction details" warning-button="Continue" loader="true" type="button"><span><i class="glyphicon glyphicon-cog"></i></span> Set Up API</button>
+                <button class="btn btn-primary pull-right ml-5 send-to-server-click"
+                        data="id:<?php echo $business->id; ?>|status:1"
+                        url="<?php echo site_url('admin/api/setup/' . $business->id); ?>" warning-title="API Setup"
+                        warning-message="You are about to register URLs to M-Pesa to receive transaction details"
+                        warning-button="Continue" loader="true" type="button"><span><i
+                                class="glyphicon glyphicon-cog"></i></span> Set Up API
+                </button>
+            </div>
+            <?php
+        } else {
+            ?>
+            <div class="alert alert-danger">
+                This section is incomplete. B2C functions are not implemented yet!
+            </div>
+            <button class="btn btn-primary pull-right ml-5" type="button" data-toggle="modal" data-target="#NewB2C">
+                <span><i class="glyphicon glyphicon-send"></i></span> Send Money
+            </button>
+            <div class="modal fade" id="NewB2C" role="dialog">
+                <div class="modal-dialog modal-md">
+                    <!-- Modal content-->
+                    <div class="modal-content">
+                        <form class="simcy-form" method="post" action="<?php echo site_url(route_to('admin.transactions.send_money')); ?>">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Send Money</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label>Transaction Type</label>
+                                    <select class="form-control select2" name="command" required>
+                                        <option>-- Please select --</option>
+                                        <option value="SalaryPayment">Salary Payment</option>
+                                        <option value="PromotionPayment">Promotion Payment</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Phone Number</label>
+                                    <input type="number" class="form-control" name="phone" min="0" placeholder="Phone Number"
+                                           required/>
+                                    <small><span class="text-danger"><i class="glyphicon glyphicon-warning-sign"></i> confirm this is the actual phone number. No in-app validation for this!</span></small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Amount</label>
+                                    <input type="number" class="form-control" name="amount" min="50" max="70000"
+                                           placeholder="Amount to send" required/>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-primary">Send Request</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
             <?php
         }
@@ -104,7 +173,7 @@
                 <img src="<?php echo base_url('assets/images/avatar.png'); ?>" class="img-circle img-responsive">
             </div>
             <div class="heading-title">
-                <h2><?php echo strtoupper($business->name); ?></h2>
+                <h2><?php echo strtoupper($active_business->name); ?></h2>
                 <p>This is your dashboard. Overview of almost everything.</p>
             </div>
         </div>
@@ -113,9 +182,11 @@
     <!-- footer -->
     <footer>
         <div class="footer-logo">
-            <img src="<?php echo base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png'); ?>" class="img-responsive">
+            <img src="<?php echo base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png'); ?>"
+                 class="img-responsive">
         </div>
-        <p class="text-right pull-right">&copy; <?php echo date('Y') ?> Bennito254 <span>•</span> All Rights Reserved.</p>
+        <p class="text-right pull-right">&copy; <?php echo date('Y') ?> Bennito254 <span>•</span> All Rights Reserved.
+        </p>
     </footer>
 
 
@@ -129,13 +200,15 @@
                 </div>
                 <div class="modal-body">
                     <p>Save a new income record.</p>
-                    <form class="simcy-form" action="http://hellaplus.simcycreative.com/income/add/" data-parsley-validate="" method="POST" loader="true">
+                    <form class="simcy-form" action="http://hellaplus.simcycreative.com/income/add/"
+                          data-parsley-validate="" method="POST" loader="true">
                         <div class="form-group">
                             <div class="row">
                                 <div class="col-md-12">
                                     <label>Title</label>
-                                    <input type="text" class="form-control" name="title" placeholder="i.e Salary" required="">
-                                    <input type="hidden" name="csrf-token" value="" />
+                                    <input type="text" class="form-control" name="title" placeholder="i.e Salary"
+                                           required="">
+                                    <input type="hidden" name="csrf-token" value=""/>
                                 </div>
                             </div>
                         </div>
@@ -144,7 +217,8 @@
                                 <div class="col-md-12">
                                     <label>Amount</label>
                                     <span class="input-prefix">$</span>
-                                    <input type="number" class="form-control prefix" name="amount" min="1" placeholder="Amount" required="">
+                                    <input type="number" class="form-control prefix" name="amount" min="1"
+                                           placeholder="Amount" required="">
                                 </div>
                             </div>
                         </div>
@@ -178,7 +252,8 @@
                             <div class="row">
                                 <div class="col-md-12">
                                     <label>Date</label>
-                                    <input type="text" class="form-control datepicker" name="income_date" placeholder="Date" required="">
+                                    <input type="text" class="form-control datepicker" name="income_date"
+                                           placeholder="Date" required="">
                                 </div>
                             </div>
                         </div>
@@ -202,14 +277,16 @@
                 <div class="modal-header">
                     <h4 class="modal-title">New Shortcode</h4>
                 </div>
-                <form class="simcy-form" action="<?php echo site_url('admin/paybill/create'); ?>" data-parsley-validate="" loader="true" method="POST" enctype="multipart/form-data">
+                <form class="simcy-form" action="<?php echo site_url('admin/paybill/create'); ?>"
+                      data-parsley-validate="" loader="true" method="POST" enctype="multipart/form-data">
                     <div class="modal-body">
                         <p class="text-center">Create a new business shortcode.</p>
                         <div class="form-group">
                             <div class="row">
                                 <div class="col-md-12">
                                     <label>Name</label>
-                                    <input type="text" class="form-control" name="name" placeholder="Shortcode Name" required="">
+                                    <input type="text" class="form-control" name="name" placeholder="Shortcode Name"
+                                           required="">
                                 </div>
                             </div>
                         </div>
@@ -217,7 +294,8 @@
                             <div class="row">
                                 <div class="col-md-12">
                                     <label>Shortcode (Paybill or Store Number)</label>
-                                    <input type="number" class="form-control" min="1" name="shortcode" placeholder="Shortcode Number" required="">
+                                    <input type="number" class="form-control" min="1" name="shortcode"
+                                           placeholder="Shortcode Number" required="">
                                 </div>
                             </div>
                         </div>
@@ -236,7 +314,8 @@
                             <div class="row">
                                 <div class="col-md-12">
                                     <label>API Consumer Key</label>
-                                    <input type="text" class="form-control" name="consumer_key" placeholder="Consumer Key for the production App" required="">
+                                    <input type="text" class="form-control" name="consumer_key"
+                                           placeholder="Consumer Key for the production App" required="">
                                 </div>
                             </div>
                         </div>
@@ -244,7 +323,8 @@
                             <div class="row">
                                 <div class="col-md-12">
                                     <label>API Consumer Secret</label>
-                                    <input type="text" class="form-control" name="consumer_secret" placeholder="Consumer Secret for the production App" required="">
+                                    <input type="text" class="form-control" name="consumer_secret"
+                                           placeholder="Consumer Secret for the production App" required="">
                                 </div>
                             </div>
                         </div>
@@ -252,7 +332,8 @@
                             <div class="row">
                                 <div class="col-md-12">
                                     <label>Initiator Username</label>
-                                    <input type="text" class="form-control" name="initiator_username" placeholder="Initiator Username">
+                                    <input type="text" class="form-control" name="initiator_username"
+                                           placeholder="Initiator Username">
                                 </div>
                             </div>
                         </div>
@@ -260,7 +341,8 @@
                             <div class="row">
                                 <div class="col-md-12">
                                     <label>Initiator Password</label>
-                                    <input type="text" class="form-control" name="initiator_password" placeholder="Initiator Password">
+                                    <input type="text" class="form-control" name="initiator_password"
+                                           placeholder="Initiator Password">
                                 </div>
                             </div>
                         </div>
