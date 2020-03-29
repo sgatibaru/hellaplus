@@ -104,22 +104,24 @@ $active_business = active_business();
 <div class="container">
     <div class="page-heading">
         <?php
-        if (isset($active_business->api_setup) && $active_business->type != 'B2C' && $active_business->api_setup != 1) {
-            ?>
-            <div>
-                <div class="alert alert-danger">
-                    No Transaction will be posted here because you have not set up the API. Click the Button on the
-                    right to setup.
-                </div>
-                <button class="btn btn-primary pull-right ml-5 send-to-server-click"
-                        data="id:<?php echo $business->id; ?>|status:1"
-                        url="<?php echo site_url('admin/api/setup/' . $business->id); ?>" warning-title="API Setup"
-                        warning-message="You are about to register URLs to M-Pesa to receive transaction details"
-                        warning-button="Continue" loader="true" type="button"><span><i
+        if ($active_business->type != 'B2C') {
+            if(isset($active_business->api_setup) && $active_business->api_setup != 1) {
+                ?>
+                <div>
+                    <div class="alert alert-danger">
+                        No Transaction will be posted here because you have not set up the API. Click the Button on the
+                        right to setup.
+                    </div>
+                    <button class="btn btn-primary pull-right ml-5 send-to-server-click"
+                            data="id:<?php echo $business->id; ?>|status:1"
+                            url="<?php echo site_url('admin/api/setup/' . $business->id); ?>" warning-title="API Setup"
+                            warning-message="You are about to register URLs to M-Pesa to receive transaction details"
+                            warning-button="Continue" loader="true" type="button"><span><i
                                 class="glyphicon glyphicon-cog"></i></span> Set Up API
-                </button>
-            </div>
-            <?php
+                    </button>
+                </div>
+                <?php
+            }
         } else {
             ?>
             <div class="alert alert-danger">
@@ -147,13 +149,13 @@ $active_business = active_business();
                                 </div>
                                 <div class="form-group">
                                     <label>Phone Number</label>
-                                    <input type="number" class="form-control" name="phone" min="0" placeholder="Phone Number"
+                                    <input type="text" class="form-control" name="phone" min="0" placeholder="Phone Number"
                                            required/>
                                     <small><span class="text-danger"><i class="glyphicon glyphicon-warning-sign"></i> confirm this is the actual phone number. No in-app validation for this!</span></small>
                                 </div>
                                 <div class="form-group">
                                     <label>Amount</label>
-                                    <input type="number" class="form-control" name="amount" min="50" max="70000"
+                                    <input type="number" class="form-control" name="amount" min="50" value="50" max="70000"
                                            placeholder="Amount to send" required/>
                                 </div>
                             </div>
@@ -188,86 +190,6 @@ $active_business = active_business();
         <p class="text-right pull-right">&copy; <?php echo date('Y') ?> Bennito254 <span>•</span> All Rights Reserved.
         </p>
     </footer>
-
-
-    <!-- add income -->
-    <div class="modal fade" id="addIncome" role="dialog">
-        <div class="modal-dialog modal-sm">
-            <!-- Modal content-->
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">Record Income</h4>
-                </div>
-                <div class="modal-body">
-                    <p>Save a new income record.</p>
-                    <form class="simcy-form" action="http://hellaplus.simcycreative.com/income/add/"
-                          data-parsley-validate="" method="POST" loader="true">
-                        <div class="form-group">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <label>Title</label>
-                                    <input type="text" class="form-control" name="title" placeholder="i.e Salary"
-                                           required="">
-                                    <input type="hidden" name="csrf-token" value=""/>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <label>Amount</label>
-                                    <span class="input-prefix">$</span>
-                                    <input type="number" class="form-control prefix" name="amount" min="1"
-                                           placeholder="Amount" required="">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <label>Account</label>
-                                    <select class="form-control select2" name="account">
-                                        <option value="00">Other</option>
-                                        <option value="103">FOOD</option>
-                                        <option value="101">Stripe</option>
-                                        <option value="81">IT Software</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="row">
-                                <div class="col-md-12 ">
-                                    <label>Group</label>
-                                    <select class="form-control select2" name="income_group">
-                                        <option value="Salary">Salary</option>
-                                        <option value="Investments">Investments</option>
-                                        <option value="Donations">Donations</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <label>Date</label>
-                                    <input type="text" class="form-control datepicker" name="income_date"
-                                           placeholder="Date" required="">
-                                </div>
-                            </div>
-                        </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Save Income</button>
-                </div>
-                </form>
-            </div>
-
-        </div>
-    </div>
-
 
     <!--Record Expense-->
     <div class="modal fade" id="addShortcode" role="dialog">

@@ -59,19 +59,41 @@ $(document).ready(function() {
         buttons: [{
             extend: 'copyHtml5',
             exportOptions: {
-                columns: [ 0, 1, 2, 3 ]
+                columns: [ 0, 1, 2, 3, 4, 5, 6 ]
             }
         },
             {
                 extend: 'excelHtml5',
                 exportOptions: {
-                    columns: [ 0, 1, 2, 3 ]
+                    columns: [ 0, 1, 2, 3, 4, 5, 6 ]
                 }
             },
             {
                 extend: 'pdfHtml5',
                 exportOptions: {
-                    columns: [ 0, 1, 2, 3 ]
+                    columns: [ 0, 1, 2, 3, 4, 5, 6 ]
+                }
+            }
+        ]
+    });
+    $('#b2c').DataTable({
+        dom: 'Bfrtip',
+        buttons: [{
+            extend: 'copyHtml5',
+            exportOptions: {
+                columns: [ 0, 1, 2, 3, 4, 5, 6, 7 ]
+            }
+        },
+            {
+                extend: 'excelHtml5',
+                exportOptions: {
+                    columns: [ 0, 1, 2, 3, 4, 5, 6, 7 ]
+                }
+            },
+            {
+                extend: 'pdfHtml5',
+                exportOptions: {
+                    columns: [ 0, 1, 2, 3, 4, 5, 6, 7 ]
                 }
             }
         ]
@@ -84,19 +106,43 @@ $('#datatable').on('change', function(e){
         buttons: [{
             extend: 'copyHtml5',
             exportOptions: {
-                columns: [ 0, 1, 2, 3 ]
+                columns: [ 0, 1, 2, 3, 4, 5, 6 ]
             }
         },
             {
                 extend: 'excelHtml5',
                 exportOptions: {
-                    columns: [ 0, 1, 2, 3 ]
+                    columns: [ 0, 1, 2, 3, 4, 5, 6 ]
                 }
             },
             {
                 extend: 'pdfHtml5',
                 exportOptions: {
-                    columns: [ 0, 1, 2, 3 ]
+                    columns: [ 0, 1, 2, 3, 4, 5, 6 ]
+                }
+            }
+        ]
+    });
+})
+$('#b2c').on('change', function(e){
+    $('#b2c').DataTable({
+        dom: 'Bfrtip',
+        buttons: [{
+            extend: 'copyHtml5',
+            exportOptions: {
+                columns: [ 0, 1, 2, 3, 4, 5, 6, 7 ]
+            }
+        },
+            {
+                extend: 'excelHtml5',
+                exportOptions: {
+                    columns: [ 0, 1, 2, 3, 4, 5, 6, 7 ]
+                }
+            },
+            {
+                extend: 'pdfHtml5',
+                exportOptions: {
+                    columns: [ 0, 1, 2, 3, 4, 5, 6, 7 ]
                 }
             }
         ]

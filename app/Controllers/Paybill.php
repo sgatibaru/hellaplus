@@ -86,4 +86,46 @@ class Paybill extends AdminController
         }
         return $this->response->setContentType('application/json')->setBody(json_encode($response));
     }
+
+    public function check_balance() {
+        $business = active_business();
+        $mpesa = new \App\Libraries\MpesaC2B(true);
+        $mpesa->paybill = $business->shortcode;
+
+        $mpesa->consumer_key = $business->consumer_key;
+        $mpesa->consumer_secret = $business->consumer_secret;
+
+        $mpesa->initiator_username = $business->initiator_username;
+        $mpesa->initiator_password = $business->initiator_password;
+
+        $mpesa->reverse_transaction_result_url = site_url('api/balanceurl/'.$business->shortcode.'/'.md5(trim($business->shortcode)),'https');
+
+        $resp = $mpesa->check_balance();
+        if($resp && $resp = json_decode($resp)) {
+            if(isset($resp->ResultCode) && $resp->ResultCode == 0){
+                $response = [
+                    'status'    => 'success',
+                    'title'     => 'Success',
+                    'message'   => 'Request sent successfully',
+                    'notifyType' => 'toastr'
+                ];
+            } else {
+                $response = [
+                    'status'    => 'error',
+                    'title'     => 'Failed',
+                    'message'   => 'An API Error occured',
+                    'notifyType' => 'toastr'
+                ];
+            }
+            //TODO: Log the Check Balance request
+        } else {
+            $response = [
+                'status'    => 'error',
+                'title'     => 'Failed',
+                'message'   => 'Something went wrong. Please try again',
+                'notifyType' => 'toastr'
+            ];
+        }
+        return $this->response->setContentType('application/json')->setBody(json_encode($response));
+    }
 }

@@ -15,7 +15,6 @@
 @import '../libs/switchery/switchery.min.css';
 @import '../libs/datepicker/css/bootstrap-datepicker.min.css';
 @import '../libs/select2/css/select2.min.css';
-@import '../libs/Croppie/croppie.css';
 
 @keyframes firespark {
   0% { box-shadow: 0 0 15em #08EBE4; }

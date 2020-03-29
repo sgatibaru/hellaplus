@@ -102,4 +102,14 @@ class BusinessEntity extends Entity
     {
 
     }
+
+    public function getAllB2CTransactions($from = false, $to = false) {
+        $to = $to ? $to : Carbon::now('Africa/Nairobi')->format('m-d-Y');
+        $from = $from ? $from : Carbon::now('Africa/Nairobi')->subDays(29)->format('m-d-Y');
+
+        $builder = Database::connect()->table('b2c');
+
+        return $builder->groupStart()->where('date >=', $from)->where('date <=', $to)->groupEnd()->where('shortcode', $this->shortcode)->get()->getResultObject();
+
+    }
 }

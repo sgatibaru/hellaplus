@@ -67,6 +67,7 @@ $routes->group('admin', function($routes) {
         $routes->add('create', '\App\Controllers\Paybill::create', ['as' => 'admin.paybill.create']);
         $routes->add('delete/(:num)', '\App\Controllers\Paybill::delete/$1', ['as' => 'admin.paybill.delete']);
         $routes->add('switch/(:num)', '\App\Controllers\Paybill::switch/$1', ['as' => 'admin.paybill.switch']);
+        $routes->post('check-balance', '\App\Controllers\Paybill::check_balance', ['as' => 'admin.paybill.check_balance']);
     });
     $routes->group('settings', function($routes) {
         $routes->add('sms', '\App\Controllers\Settings::sms', ['as' => 'admin.settings.sms']);
@@ -77,8 +78,9 @@ $routes->group('admin', function($routes) {
 $routes->group('api', function ($routes) {
     $routes->post('confirm/(:any)/(:any)', '\App\Controllers\Api::confirm/$1/$2', ['as'=>'api.confirm']);
     $routes->post('validate/(:any)/(:any)', '\App\Controllers\Api::validation/$1/$2', ['as'=>'api.validate']);
-    $routes->post('balanceurl/(:any)/(:any)', '\App\Controllers\Api::balance_url/$1/$2', ['as'=>'api.resulturl']);
+    $routes->post('balanceurl/(:any)/(:any)', '\App\Controllers\Api::balance_url/$1/$2', ['as'=>'api.balanceurl']);
     $routes->post('reversalurl/(:any)/(:any)', '\App\Controllers\Api::reversal_url/$1/$2', ['as'=>'api.reversalurl']);
+    $routes->post('resulturl/(:any)/(:any)', '\App\Controllers\Api::result_url/$1/$2', ['as'=>'api.resulturl']);
 });
 
 /**

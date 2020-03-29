@@ -106,9 +106,7 @@ class MpesaC2B
         $this->test_msisdn = '';
 
         $pubkey = file_get_contents(dirname(__FILE__).'/cert.cer');
-        //$enc = '';
         openssl_public_encrypt($this->initiator_password, $output, $pubkey, OPENSSL_PKCS1_PADDING);
-        //$enc .= $output;
         $this->cred = base64_encode($output);
 
         //We override the above $this->cred with the testing credentials
@@ -140,7 +138,7 @@ class MpesaC2B
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: Basic '.$credentials, 'Content-Type: application/json'));
         $response = curl_exec($ch);
         curl_close($ch);
-        //print_r($response);
+
         $response = @json_decode($response);
 
         $access_token = @$response->access_token;

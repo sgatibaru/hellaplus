@@ -32,6 +32,6 @@ class AdminFilter implements \CodeIgniter\Filters\FilterInterface
      */
     public function after(RequestInterface $request, ResponseInterface $response)
     {
-        // TODO: Implement after() method.
+
     }
 }

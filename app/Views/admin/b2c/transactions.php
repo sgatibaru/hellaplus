@@ -14,12 +14,12 @@
             </div>
             <div class="card-body" id="transactions_server">
                 <?php
-                //$transactions = active_business()->getAllTransactions();
+                $transactions = active_business()->getAllB2CTransactions();
                 $currency = get_option('currency', 'Kshs');
                 if($transactions && count($transactions) > 0) {
                     ?>
                     <div class="table-responsive longer" style="padding-bottom: 80px">
-                        <table class="table table-hover display" id="datatable">
+                        <table class="table table-hover display" id="b2c">
                             <thead>
                             <tr>
                                 <th>#</th>
@@ -27,7 +27,8 @@
                                 <th>Phone No.</th>
                                 <th>Transaction ID</th>
                                 <th>Amount</th>
-                                <th>Ref No.</th>
+                                <th>Sent To</th>
+                                <th>Completed At</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -40,17 +41,22 @@
                                     ?>
                                     <tr>
                                         <td><?php echo $n_; ?></td>
-                                        <td><div title="<?php echo \Carbon\Carbon::createFromFormat('YmdHis', $transaction->trans_time, config('appTimezone'))->format('d/m/Y h:i A'); ?>"><?php echo \Carbon\Carbon::createFromFormat('YmdHis', $transaction->trans_time)->format('d/m/Y'); ?></div></td>
-                                        <td><?php echo $transaction->msisdn; ?></td>
-                                        <td><?php echo $transaction->trans_id; ?></td>
-                                        <td><?php echo $currency.' '.number_format($transaction->trans_amount, 2); ?></td>
-                                        <td><?php echo $transaction->ref_number; ?></td>
+                                        <td><div title="<?php echo \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $transaction->created_on, config('appTimezone'))->format('d/m/Y h:i A'); ?>"><?php echo \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $transaction->created_on)->format('d/m/Y'); ?></div></td>
+                                        <td><?php echo $transaction->phone; ?></td>
+                                        <td><?php echo $transaction->trx_id ? $transaction->trx_id : '-'; ?></td>
+                                        <td><?php echo $currency.' '.number_format(is_numeric($transaction->amount) ? $transaction->amount : 0, 2); ?></td>
+                                        <td><?php echo $transaction->receiver_name ? $transaction->receiver_name : '-'; ?></td>
+                                        <td><?php echo $transaction->trx_time ? $transaction->trx_time : '-'; ?></td>
                                         <td>
                                             <?php
-                                            if($transaction->trans_type == 'income') {
-                                                echo '<div class="text-success">Income</div>';
+                                            if(isset($transaction->trx_id) && $transaction->trx_id != '') {
+                                                if($transaction->result_code == 0) {
+                                                    echo '<div class="text-success">Completed</div>';
+                                                } else {
+                                                    echo '<div class="text-danger" title="'.$transaction->result_desc.'">Failed</div>';
+                                                }
                                             } else {
-                                                echo '<div class="text-danger">Reversed</div>';
+                                                echo '<div class="text-warning">Pending</div>';
                                             }
                                             ?>
                                         </td>
@@ -59,9 +65,9 @@
                                                 <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">Actions <span class="caret"></span> </button>
                                                 <ul class="dropdown-menu">
                                                     <?php
-                                                    if($transaction->trans_type == 'income') {
+                                                    if(false) {
                                                         ?>
-                                                        <li><a class="c-dropdown__item dropdown-item  send-to-server-click" data="id:<?php echo $transaction->id; ?>|status:1" url="<?php echo site_url('admin/transactions/reverse/'.$transaction->id); ?>" warning-title="Reverse Transaction" warning-message="You are about to reverse this transaction" warning-button="Continue" loader="true"><i class="mdi mdi-refresh"></i> Reverse Transaction</a></li>
+                                                        <li><a class="c-dropdown__item dropdown-item send-to-server-click" data="id:<?php echo $transaction->id; ?>|status:1" url="<?php echo site_url('admin/transactions/reverse/'.$transaction->id); ?>" warning-title="Reverse Transaction" warning-message="You are about to reverse this transaction" warning-button="Continue" loader="true"><i class="mdi mdi-refresh"></i> Reverse Transaction</a></li>
                                                         <?php
                                                     }
                                                     ?>

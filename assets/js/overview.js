@@ -48,8 +48,7 @@ if (option && typeof option === "object") {
 }
 
 
-// grapgh
-
+// graph
 var dom = document.getElementById("monthly");
 var myChart = echarts.init(dom);
 var app = {};
@@ -116,6 +115,29 @@ option = {
 if (option && typeof option === "object") {
     myChart.setOption(option, true);
 }
+
+// graph-b2c
+    var dombc = document.getElementById("monthly_disbursement");
+    var myChart2 = echarts.init(dombc);
+    var app = {};
+    option2 = null;
+
+    option2 = {
+        xAxis: {
+            type: 'category',
+            data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        },
+        yAxis: {
+            type: 'value'
+        },
+        series: [{
+            data: [820, 932, 901, 934, 1290, 1330, 1320],
+            type: 'line'
+        }]
+    };
+    if (option2 && typeof option2 === "object") {
+        myChart2.setOption(option2, true);
+    }
 });
 
 $(function() {

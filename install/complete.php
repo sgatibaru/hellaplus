@@ -176,6 +176,25 @@ CREATE TABLE `{$prefix}users_groups` (
   CONSTRAINT `fk_users_groups_groups1` FOREIGN KEY (`group_id`) REFERENCES `{$prefix}groups` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION,
   CONSTRAINT `fk_users_groups_users1` FOREIGN KEY (`user_id`) REFERENCES `{$prefix}users` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+DROP TABLE IF EXISTS `{$prefix}b2c`;
+CREATE TABLE `{$prefix}b2c` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `shortcode` varchar(8) NOT NULL,
+  `conversation_id` varchar(60) NOT NULL,
+  `request_code` varchar(10) NOT NULL,
+  `result_code` varchar(10) DEFAULT NULL,
+  `trx_id` varchar(25) DEFAULT NULL,
+  `phone` varchar(15) NOT NULL,
+  `amount` varchar(15) NOT NULL,
+  `trx_time` varchar(25) DEFAULT NULL,
+  `receiver_name` varchar(60) DEFAULT NULL,
+  `actual_data` text DEFAULT NULL,
+  `date` varchar(15) NOT NULL,
+  `result_desc` text DEFAULT NULL,
+  `created_on` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 EOL;
 $sql = str_replace(array("\r", "\n"), '', $sql);
 //echo $sql;

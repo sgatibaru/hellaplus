@@ -4,6 +4,8 @@
 namespace App\Controllers;
 
 
+use CodeIgniter\Config\Config;
+
 class Transactions extends AdminController
 {
     public function __construct()
@@ -84,6 +86,7 @@ class Transactions extends AdminController
                         'callback'  => '$(\'.modal\').modal(\'hide\');'
                     ];
                 }
+                //TODO: Maybe log the Reverse request?
             } else {
                 $response = [
                     'status'    => 'error',
@@ -148,6 +151,99 @@ class Transactions extends AdminController
                 'notifyType'    => 'toastr'
             ];
         }
+        return $this->response->setContentType('application/json')->setBody(json_encode($response));
+    }
+
+    public function send_money() {
+        $validation = \Config\Services::validation();
+        $validation->setRule('command', 'Transaction Type', 'trim|required|in_list[PromotionPayment,SalaryPayment]');
+        $validation->setRule('phone', 'Phone Number', 'trim|required|is_numeric|exact_length[12]');
+        $validation->setRule('amount', 'Amount', 'trim|numeric|is_natural|greater_than[49]');
+        if($validation->withRequest($this->request)->run()) {
+            // Make response
+            $mpesa = new \App\Libraries\MpesaB2C(false);
+            $business = active_business();
+            $mpesa->paybill = $business->shortcode;
+
+            $mpesa->consumer_key = $business->consumer_key;
+            $mpesa->consumer_secret = $business->consumer_secret;
+
+            $mpesa->initiator_username = $business->initiator_username;
+            $mpesa->initiator_password = $business->initiator_password;
+
+            $mpesa->b2c_result_url = site_url('api/resulturl/'.$business->shortcode.'/'.md5(trim($business->shortcode)), 'https');
+            //$mpesa->b2c_result_url = 'https://dev.bnnito254.com/cb.php';
+
+            $amount = $this->request->getPost('amount');
+            $phone = $this->request->getPost('phone');
+            $command = $this->request->getPost('command');
+
+            try {
+                $mpesa_request = $mpesa->b2c($amount, $phone, $command);
+            } catch (\Exception $e) {
+                $mpesa_request = false;
+            }
+            $res = @json_decode($mpesa_request);
+
+            if($res) {
+                if(isset($res->ResponseCode) && $res->ResponseCode == '0') {
+                    $to_db = [
+                        'conversation_id'   => $res->ConversationID,
+                        'request_code'      => $res->ResponseCode,
+                        'phone'             => $phone,
+                        'amount'            => $amount,
+                        'date'              => date('m-d-Y'),
+                        'shortcode'         => $business->shortcode
+                    ];
+                    \Config\Database::connect()->table('b2c')->insert($to_db);
+                    $response = [
+                        'status'    => 'success',
+                        'title'     => 'Success',
+                        'message'   => 'Disbursement request sent successfully',
+                        'callback'  => '$(\'.modal\').modal(\'hide\');'
+                    ];
+
+                    // TODO: probably log requests?
+                } else {
+                    if(isset($res->ResponseDescription)) {
+                        $response = [
+                            'status'    => 'error',
+                            'title'     => 'API Error',
+                            'message'   => $res->ResponseDescription,
+                            'callback'  => '$(\'.modal\').modal(\'hide\');'
+                        ];
+                    } else {
+                        if(isset($res->errorMessage)) {
+                            $msg = $res->errorMessage;
+                        } else {
+                            $msg = 'An unknown API error occurred';
+                        }
+                        $response = [
+                            'status'    => 'error',
+                            'title'     => 'API Error',
+                            'message'   => $msg,
+                            'callback'  => '$(\'.modal\').modal(\'hide\');'
+                        ];
+                    }
+                }
+            } else {
+                $response = [
+                    'status'    => 'error',
+                    'title'     => 'API Error',
+                    'message'   => 'An API error occurred',
+                    'callback'  => '$(\'.modal\').modal(\'hide\');'
+                ];
+            }
+
+        } else {
+            $response = [
+                'status'    => 'error',
+                'title'     => 'Validation Errors',
+                'message'   => implode(', ', $validation->getErrors()),
+                'callback'  => '$(\'.modal\').modal(\'hide\');'
+            ];
+        }
+
         return $this->response->setContentType('application/json')->setBody(json_encode($response));
     }
 }

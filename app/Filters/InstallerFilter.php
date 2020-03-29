@@ -16,7 +16,6 @@ class InstallerFilter implements FilterInterface
      */
     public function before(RequestInterface $request)
     {
-        // TODO: Implement before() method.
         if(file_exists(FCPATH.'env.php')){
             return redirect()->to(site_url());
         }
@@ -27,6 +26,6 @@ class InstallerFilter implements FilterInterface
      */
     public function after(RequestInterface $request, ResponseInterface $response)
     {
-        // TODO: Implement after() method.
+        // Leave empty. Nothing to do
     }
 }

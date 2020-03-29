@@ -163,12 +163,52 @@ class Api extends BaseController
                 ];
                 @\Config\Database::connect()->table('logs')->insert($log);
             }
+            //TODO: Maybe log the Reversal response?
         }
         return $this->response->setContentType('application/json')->setBody(json_encode($response));
     }
 
     public function balance_url($shortcode, $key){
+        $data = file_get_contents('php://input');
+        $actual = $data;
+        $data = format_account_balance($data);
+        if($data) {
+            if($data->ResultCode == 0) {
+                //Only consider successful requests
+                set_option($shortcode.'_balance', $actual);
+            }
+        }
+        //TODO: Maybe log the failed information in the logs table
 
+        $response = [
+            'ResultCode' => 0,
+            'ResultDesc' => 'Success'
+        ];
+
+        return $this->response->setContentType('application/json')->setBody(json_encode($response));
+    }
+
+    public function result_url($shortcode, $key) {
+        $data = file_get_contents('php://input');
+        $actual = $data;
+        $data = format_b2c($data);
+        $to_db = [
+            'result_code'       => $data->ResultCode,
+            'trx_id'            => @$data->TransactionReceipt,
+            'trx_time'          => @$data->TransactionCompletedDateTime,
+            'receiver_name'     => @$data->ReceiverPartyPublicName,
+            'actual_data'       => $actual,
+            'amount'            => @$data->TransactionAmount,
+            'result_desc'       => @$data->ResultDesc
+        ];
+        \Config\Database::connect()->table('b2c')->where('conversation_id', $data->ConversationID)->update($to_db);
+
+        $response = [
+            'ResultCode' => 0,
+            'ResultDesc' => 'Success'
+        ];
+
+        return $this->response->setContentType('application/json')->setBody(json_encode($response));
     }
 
     private function format_crazy($data) {

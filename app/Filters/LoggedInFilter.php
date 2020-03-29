@@ -33,6 +33,6 @@ class LoggedInFilter implements FilterInterface
      */
     public function after(RequestInterface $request, ResponseInterface $response)
     {
-        // TODO: Implement after() method.
+
     }
 }

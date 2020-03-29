@@ -1,15 +1,10 @@
 <?php
+
+use Config\Database;
+
 $business = active_business();
-$todaysTransactions = $business->getTodaysTotalTransactions();
-$todaysReversals = $business->getTodaysTotalReversals();
 
-$builder = \Config\Database::connect()->table('transactions');
-$totalTransRows = $builder->where('date', date('m-d-Y'))->where('shortcode', $business->shortcode)->countAllResults(true);
-$totalReversalRows = $builder->where('date', date('m-d-Y'))->where('shortcode', $business->shortcode)->where('trans_type', 'reversal')->countAllResults(true);
-$totalSuccessRows = $totalTransRows-$totalReversalRows;
-
-$incomeLoaded = $totalTransRows > 0 ? ($totalSuccessRows/$totalTransRows)*100 : 0;
-$reversalLoaded = $totalTransRows > 0 ? 100-$incomeLoaded : 0;
+$builder = Database::connect()->table('transactions');
 ?>
 
 <div class="row overview-widgets">
@@ -20,9 +15,12 @@ $reversalLoaded = $totalTransRows > 0 ? 100-$incomeLoaded : 0;
             </div>
             <div class="card-body">
                 <div class="text-center">
-                    <h1><strong><?php echo get_option('currency', 'Kshs').' '.($todaysTransactions-$todaysReversals); ?></strong></h1>
+                    <h1>
+                        <strong><?php echo get_option('currency', 'Kshs') . ' 0.00'; ?></strong>
+                    </h1>
                     <br/>
-                    <a href="<?php echo site_url('admin/transactions'); ?>" >View Transactions <span><i class="mdi mdi-hand-pointing-right"></i></span></a>
+                    <a href="<?php echo site_url('admin/transactions'); ?>">View Transactions <span><i
+                                    class="mdi mdi-hand-pointing-right"></i></span></a>
                 </div>
             </div>
         </div>
@@ -30,23 +28,35 @@ $reversalLoaded = $totalTransRows > 0 ? 100-$incomeLoaded : 0;
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <div class="pull-right"><a title="Refresh Balances"><i class="mdi mdi-refresh"></i></a></div>
+                <div class="pull-right"><a title="Refresh Balances" class="send-to-server-click" data="check_balance:1" url="<?php echo site_url(route_to('admin.paybill.check_balance')); ?>" warning-title="Check Balance" warning-message="You are about to request for balances" warning-button="Continue" loader="true" style="cursor: pointer"><i
+                                class="mdi mdi-refresh"></i></a></div>
                 <h4 class="text-center">Shortcode Balances</h4>
             </div>
-            <div class="card-body overflow">
-                <div class="transaction-amount">
-                    <!-- item -->
-                    <div class="transaction-amount-item">
-                        <div class="transaction-icon">
-                            <i class="mdi mdi-checkbox-blank-circle text-primary"></i>
-                        </div>
-                        <div class="transaction-info">
-                            <strong><?php echo $todaysTransactions.' '.get_option('currency_symbol', '/-'); ?></strong>
-                            <span>Income</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <table class="card-body overflow table table-condensed table-striped">
+                <?php
+                $data = get_option($business->shortcode.'_balance', FALSE);
+                $data = format_account_balance($data);
+                if ($data) {
+                    if ($data->ResultCode == 0) {
+                        foreach ($data->Balances as $balance) {
+                            ?>
+                            <tr>
+                                <td><i class="mdi mdi-arrow-right-box"></i></td>
+                                <th><?php echo $balance->name; ?></th>
+                                <td><?php echo $balance->currency . ' ' . number_format($balance->amount, 2); ?></td>
+                            </tr>
+                            <?php
+                        }
+                    } else {
+                        ?>
+                        <div class="alert alert-danger"><?php echo $data->ResultDesc; ?></div> <?php
+                    }
+                } else {
+                    ?>
+                    <div class="alert alert-warning">Balance data may not be available</div> <?php
+                }
+                ?>
+            </table>
         </div>
     </div>
 </div>
