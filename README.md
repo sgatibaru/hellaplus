@@ -15,4 +15,4 @@ Hellaplus is a dashboard, built on CodeIgniter v4 and Bootstrap v4 to manage M-P
 - Follow the installation instructions
 
 ## Known issues
-- Initiator information is invalid for sandbox apps.
+- Initiator information is invalid for sandbox apps that do not have Security Credential set.
