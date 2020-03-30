@@ -175,9 +175,10 @@ class Api extends BaseController
         if($data) {
             if($data->ResultCode == 0) {
                 //Only consider successful requests
-                set_option($shortcode.'_balance', $actual);
+                //set_option($shortcode.'_balance', $actual);
             }
         }
+        set_option($shortcode.'_balance', $actual);
         //TODO: Maybe log the failed information in the logs table
 
         $response = [
@@ -198,7 +199,6 @@ class Api extends BaseController
             'trx_time'          => @$data->TransactionCompletedDateTime,
             'receiver_name'     => @$data->ReceiverPartyPublicName,
             'actual_data'       => $actual,
-            'amount'            => @$data->TransactionAmount,
             'result_desc'       => @$data->ResultDesc
         ];
         \Config\Database::connect()->table('b2c')->where('conversation_id', $data->ConversationID)->update($to_db);

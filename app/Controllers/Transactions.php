@@ -172,7 +172,6 @@ class Transactions extends AdminController
             $mpesa->initiator_password = $business->initiator_password;
 
             $mpesa->b2c_result_url = site_url('api/resulturl/'.$business->shortcode.'/'.md5(trim($business->shortcode)), 'https');
-            //$mpesa->b2c_result_url = 'https://dev.bnnito254.com/cb.php';
 
             $amount = $this->request->getPost('amount');
             $phone = $this->request->getPost('phone');

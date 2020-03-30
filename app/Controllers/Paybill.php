@@ -98,11 +98,11 @@ class Paybill extends AdminController
         $mpesa->initiator_username = $business->initiator_username;
         $mpesa->initiator_password = $business->initiator_password;
 
-        $mpesa->reverse_transaction_result_url = site_url('api/balanceurl/'.$business->shortcode.'/'.md5(trim($business->shortcode)),'https');
+        $mpesa->balance_check_result_url = site_url('api/balanceurl/'.$business->shortcode.'/'.md5(trim($business->shortcode)),'https');
 
         $resp = $mpesa->check_balance();
         if($resp && $resp = json_decode($resp)) {
-            if(isset($resp->ResultCode) && $resp->ResultCode == 0){
+            if(isset($resp->ResponseCode) && $resp->ResponseCode == 0){
                 $response = [
                     'status'    => 'success',
                     'title'     => 'Success',
@@ -110,10 +110,16 @@ class Paybill extends AdminController
                     'notifyType' => 'toastr'
                 ];
             } else {
+                if(isset($resp->errorMessage)) {
+                    $msg = $resp->errorMessage;
+                } else {
+                    $msg = 'An API Error occured';
+                }
+
                 $response = [
                     'status'    => 'error',
-                    'title'     => 'Failed',
-                    'message'   => 'An API Error occured',
+                    'title'     => 'Request Failed',
+                    'message'   => $msg,
                     'notifyType' => 'toastr'
                 ];
             }

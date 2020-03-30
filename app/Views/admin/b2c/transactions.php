@@ -55,6 +55,8 @@
                                                 } else {
                                                     echo '<div class="text-danger" title="'.$transaction->result_desc.'">Failed</div>';
                                                 }
+                                            } elseif ($transaction->result_code != 0) {
+                                                echo '<div class="text-danger" title="'.$transaction->result_desc.'">Failed</div>';
                                             } else {
                                                 echo '<div class="text-warning">Pending</div>';
                                             }

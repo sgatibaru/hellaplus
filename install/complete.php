@@ -51,6 +51,7 @@ CREATE TABLE `{$prefix}businesses` (
   `initiator_username` varchar(254) NOT NULL,
   `initiator_password` varchar(254) NOT NULL,
   `api_setup` int(1) NOT NULL DEFAULT 0,
+  `env` varchar(10) NOT NULL DEFAULT 'sandbox',
   `created_on` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `shortcode` (`shortcode`)

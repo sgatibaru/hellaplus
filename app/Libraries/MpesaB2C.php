@@ -5,6 +5,8 @@ namespace App\Libraries;
 
 
 use Exception;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
 class MpesaB2C
 {
@@ -68,7 +70,7 @@ class MpesaB2C
     public function __construct($env = false)
     {
         //Base URL for the API endpoints. This is basically the 'common' part of the API endpoints
-        if ($env) {
+        if (active_business()->env != 'sandbox') {
             $this->env = 'live';
             $this->base_url = 'https://api.safaricom.co.ke/mpesa/';
         } else {
@@ -84,12 +86,6 @@ class MpesaB2C
 
         $this->callback_baseurl = '';
 
-        $pubkey = file_get_contents(dirname(__FILE__) . '/cert.cer');
-        openssl_public_encrypt($this->initiator_password, $output, $pubkey, OPENSSL_PKCS1_PADDING);
-        $this->cred = base64_encode($output);
-
-        //We override the above $this->cred with the testing credentials
-        //$this->cred = 'jQGehsgnujMdEnVOhGq3YdX72blQnpZ+RPgYhe15kU2+UiUkauYDbsxbv+rgVgK4nKU/90R6V7CZDx4+e6KcYQMKCwJht9FfdxG3gC8g2fgxlrCvR+RnObwLOBfJ9htDVyUCJjxP31J/RoC7j25N3g7WDRfcoDXrhRUmG9NGLua+leF6ssJrNxFv6S0aT8S1ihl3aueGAuZxWr7OnbagZZElPueAZKEs8IJDKCh4xkZVUevvUysZCZuHqchMKLYDv80zK/XJ46/Ja/7F1+Qw7180bR/XcptV3ttXV56kGvJ/GMp6FUUem32o2bJMvu+6AkqJnczj0QNq5ZVtTudjvg==';
     }
 
     /**
@@ -112,15 +108,17 @@ class MpesaB2C
         } else {
             $cred_url = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
         }
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $cred_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: Basic ' . $credentials, 'Content-Type: application/json'));
-        $response = curl_exec($ch);
-        curl_close($ch);
+        $client = new Client();
+        try {
+            $request = $client->get($cred_url, array(
+                'headers'   => array('content-type'  => 'application/json', 'Authorization' => 'Basic '.$credentials)
+            ));
+            $response = $request->getBody()->getContents();
+        } catch (RequestException $e) {
+            $response = $e->getResponse()->getBody()->getContents();
+        }
 
         $response = @json_decode($response);
-
         $access_token = @$response->access_token;
 
         // The above $access_token expires after an hour, find a way to cache it to minimize requests to the server
@@ -130,16 +128,17 @@ class MpesaB2C
         }
 
         if ($access_token != '' || $access_token !== FALSE) {
-            $curl = curl_init();
-            curl_setopt($curl, CURLOPT_URL, $url);
-            curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'Authorization: Bearer ' . $access_token));
 
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
-            curl_setopt($curl, CURLOPT_POST, TRUE);
-            curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-
-            $response = curl_exec($curl);
-            curl_close($curl);
+            $client = new Client();
+            try {
+                $request = $client->post($url, array(
+                    'headers'   => array('content-type'  => 'application/json', 'Authorization' => 'Bearer '.$access_token),
+                    'body'      => $data
+                ));
+                $response = $request->getBody()->getContents();
+            } catch (RequestException $e) {
+                $response = $e->getResponse()->getBody()->getContents();
+            }
             return $response;
         } else {
             return FALSE;
@@ -162,7 +161,7 @@ class MpesaB2C
     {
         $request_data = array(
             'InitiatorName' => $this->initiator_username,
-            'SecurityCredential' => $this->cred,
+            'SecurityCredential' => $this->get_credential(),
             'CommandID' => $type,
             'Amount' => $amount,
             'PartyA' => $this->paybill,
@@ -195,7 +194,7 @@ class MpesaB2C
             'IdentifierType' => 4,
             'Remarks' => 'Testing API',
             'Initiator' => $this->initiator_username,
-            'SecurityCredential' => $this->cred,
+            'SecurityCredential' => $this->get_credential(),
             'QueueTimeOutURL' => $this->status_request_result_url,
             'ResultURL' => $this->status_request_result_url,
             'TransactionID' => $transaction,
@@ -227,7 +226,7 @@ class MpesaB2C
             'Remarks' => 'Testing',
             'Amount' => $amount,
             'Initiator' => $this->initiator_username,
-            'SecurityCredential' => $this->cred,
+            'SecurityCredential' => $this->get_credential(),
             'QueueTimeOutURL' => $this->reverse_transaction_result_url,
             'ResultURL' => $this->reverse_transaction_result_url,
             'TransactionID' => $trx_id
@@ -235,5 +234,18 @@ class MpesaB2C
         $data = json_encode($data);
         $url = $this->base_url . 'reversal/v1/request';
         return $this->submit_request($url, $data);
+    }
+
+
+    private function get_credential() {
+        if($this->env == 'sandbox') {
+            $pubkey = file_get_contents(dirname(__FILE__) . '/cert-sandbox.cer');
+        } else {
+            $pubkey = file_get_contents(dirname(__FILE__) . '/cert-prod.cer');
+        }
+
+        openssl_public_encrypt($this->initiator_password, $output, $pubkey, OPENSSL_PKCS1_PADDING);
+        $this->cred = base64_encode($output);
+        return $this->cred;
     }
 }

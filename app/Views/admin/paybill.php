@@ -36,6 +36,17 @@ $shortcode = active_business();
                                         <div class="form-group">
                                             <div class="row">
                                                 <div class="col-md-12">
+                                                    <label>API Environment</label>
+                                                    <select class="form-control select2" name="env" require="">
+                                                        <option <?php echo $shortcode->env == 'live' ? 'selected' : ''; ?> value="live">Live/Production</option>
+                                                        <option <?php echo $shortcode->env == 'sandbox' ? 'selected' : ''; ?> value="sandbox">Sandbox</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <div class="row">
+                                                <div class="col-md-12">
                                                     <label>Shortcode (Paybill or Store Number)</label>
                                                     <input type="number" class="form-control" min="1" name="shortcode" value="<?php echo $shortcode->shortcode; ?>" placeholder="Shortcode Number" required="">
                                                 </div>

@@ -125,7 +125,7 @@ $active_business = active_business();
         } else {
             ?>
             <div class="alert alert-danger">
-                This section is incomplete. B2C functions are not implemented yet!
+                This section is not tested. Some functions may misbehave!
             </div>
             <button class="btn btn-primary pull-right ml-5" type="button" data-toggle="modal" data-target="#NewB2C">
                 <span><i class="glyphicon glyphicon-send"></i></span> Send Money
@@ -134,7 +134,7 @@ $active_business = active_business();
                 <div class="modal-dialog modal-md">
                     <!-- Modal content-->
                     <div class="modal-content">
-                        <form class="simcy-form" method="post" action="<?php echo site_url(route_to('admin.transactions.send_money')); ?>">
+                        <form class="simcy-form" method="post" action="<?php echo site_url(route_to('admin.transactions.send_money')); ?>" data-parsley-validate="" loader="true">
                             <div class="modal-header">
                                 <h4 class="modal-title">Send Money</h4>
                             </div>
@@ -209,6 +209,17 @@ $active_business = active_business();
                                     <label>Name</label>
                                     <input type="text" class="form-control" name="name" placeholder="Shortcode Name"
                                            required="">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label>API Environment</label>
+                                    <select class="form-control select2" name="env" require="">
+                                        <option value="live">Live/Production</option>
+                                        <option value="sandbox">Sandbox</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>

@@ -34,9 +34,8 @@ $builder = Database::connect()->table('transactions');
             </div>
             <table class="card-body overflow table table-condensed table-striped">
                 <?php
-                $data = get_option($business->shortcode.'_balance', FALSE);
-                $data = format_account_balance($data);
-                if ($data) {
+                $actual_data = get_option($business->shortcode.'_balance', FALSE);
+                if ($data = format_account_balance($actual_data) ) {
                     if ($data->ResultCode == 0) {
                         foreach ($data->Balances as $balance) {
                             ?>
@@ -49,9 +48,9 @@ $builder = Database::connect()->table('transactions');
                         }
                     } else {
                         ?>
-                        <div class="alert alert-danger"><?php echo $data->ResultDesc; ?></div> <?php
+                        <div class="alert alert-danger"><b>WARNING: </b><?php echo $data->ResultDesc; ?></div> <?php
                     }
-                } else {
+                }  else {
                     ?>
                     <div class="alert alert-warning">Balance data may not be available</div> <?php
                 }
