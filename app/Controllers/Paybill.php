@@ -24,6 +24,8 @@ class Paybill extends AdminController
         if($this->request->getPost()) {
             $model = new \App\Models\BusinessModel();
             if($model->save($this->request->getPost())) {
+                $shortcode = $this->request->getPost('shortcode');
+                set_option($shortcode.'_credential', trim($this->request->getPost('security_credential')));
                 $response = [
                     'status'    => 'success',
                     'title'     => 'Shortcodes Updated',

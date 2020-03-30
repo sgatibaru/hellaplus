@@ -109,7 +109,7 @@ class BusinessEntity extends Entity
 
         $builder = Database::connect()->table('b2c');
 
-        return $builder->groupStart()->where('date >=', $from)->where('date <=', $to)->groupEnd()->where('shortcode', $this->shortcode)->get()->getResultObject();
+        return $builder->groupStart()->where('date >=', $from)->where('date <=', $to)->groupEnd()->where('shortcode', $this->shortcode)->orderBy('id', 'DESC')->get()->getResultObject();
 
     }
 }

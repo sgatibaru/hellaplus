@@ -238,14 +238,19 @@ class MpesaB2C
 
 
     private function get_credential() {
-        if($this->env == 'sandbox') {
-            $pubkey = file_get_contents(dirname(__FILE__) . '/cert-sandbox.cer');
+        $credential = get_option($this->paybill.'_credential', FALSE);
+        if($credential && $credential != '') {
+            $this->cred = $credential;
         } else {
-            $pubkey = file_get_contents(dirname(__FILE__) . '/cert-prod.cer');
-        }
+            if($this->env == 'sandbox') {
+                $pubkey = file_get_contents(dirname(__FILE__) . '/cert-sandbox.cer');
+            } else {
+                $pubkey = file_get_contents(dirname(__FILE__) . '/cert-prod.cer');
+            }
 
-        openssl_public_encrypt($this->initiator_password, $output, $pubkey, OPENSSL_PKCS1_PADDING);
-        $this->cred = base64_encode($output);
+            openssl_public_encrypt($this->initiator_password, $output, $pubkey, OPENSSL_PKCS1_PADDING);
+            $this->cred = base64_encode($output);
+        }
         return $this->cred;
     }
 }

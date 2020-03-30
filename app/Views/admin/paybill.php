@@ -95,6 +95,16 @@ $shortcode = active_business();
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <div class="form-group">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <label>Encrypted Security Credential</label>
+                                                    <textarea type="text" class="form-control" name="security_credential"><?php echo get_option($shortcode->shortcode.'_credential', ''); ?></textarea>
+                                                    <small>Please encrypt your Initiator password <a href="https://developer.safaricom.co.ke/test_credentials">on the developers portal, here.</a></small>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
