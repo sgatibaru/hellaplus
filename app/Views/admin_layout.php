@@ -124,9 +124,6 @@ $active_business = active_business();
             }
         } else {
             ?>
-            <div class="alert alert-danger">
-                This section is not tested. Some functions may misbehave!
-            </div>
             <button class="btn btn-primary pull-right ml-5" type="button" data-toggle="modal" data-target="#NewB2C">
                 <span><i class="glyphicon glyphicon-send"></i></span> Send Money
             </button>

@@ -55,6 +55,8 @@ $routes->group('admin', function($routes) {
     });
     $routes->group('customers', function($routes){
         $routes->add('/', '\App\Controllers\Customers::index', ['as' => 'admin.customers']);
+        $routes->add('add', '\App\Controllers\Customers::add', ['as' => 'admin.customers.add']);
+        $routes->add('delete/(:num)', '\App\Controllers\Customers::delete/$1', ['as' => 'admin.customers.delete']);
         $routes->add('deactivate/(:any)', '\App\Controllers\Customers::deactivate/$1', ['as' => 'admin.customers.deactivate']);
         $routes->add('activate/(:any)', '\App\Controllers\Customers::activate/$1', ['as' => 'admin.customers.activate']);
         $routes->post('send-sms', '\App\Controllers\Customers::send_single_sms', ['as' => 'admin.customers.send_sms']);

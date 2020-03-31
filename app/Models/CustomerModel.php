@@ -14,7 +14,8 @@ class CustomerModel extends \CodeIgniter\Model
     protected $allowedFields = ['fname', 'mname', 'lname', 'phone'];
 
     protected $validationRules = [
-        'phone'  => 'trim|required',
+        'phone'  => 'trim|required|is_numeric|is_natural|exact_length[12]',
+        'fname'     => 'trim|required',
     ];
     protected $skipValidation = false;
 }
