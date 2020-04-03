@@ -4,11 +4,14 @@
 namespace App\Controllers;
 
 
+use App\Models\BusinessModel;
+
 class Settings extends AdminController
 {
     public function __construct()
     {
         parent::__construct();
+        $this->data['title'] = 'Shortcode Settings';
     }
 
     public function sms()
@@ -50,5 +53,11 @@ class Settings extends AdminController
             ];
         }
         return $this->response->setContentType('application/json')->setBody(json_encode($response));
+    }
+
+    public function shortcodes() {
+        $bs = new BusinessModel();
+        $this->data['shortcodes'] = $bs->findAll();
+        return $this->_renderPage('admin/shortcodes', $this->data);
     }
 }

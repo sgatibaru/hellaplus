@@ -57,7 +57,11 @@ class Paybill extends AdminController
             'message'   => 'Shortcode does not exist'
         ];
         if($bs) {
+            $shortcode = $bs->shortcode;
             if(\Config\Database::connect()->table('businesses')->where('id', $bs->id)->delete()){
+                $connection = \Config\Database::connect();
+                @$connection->table('transactions')->where('shortcode', $shortcode)->delete();
+                @$connection->table('b2c')->where('shortcode', $shortcode)->delete();
                 $response = [
                     'status'    => 'success',
                     'title'     => 'Shortcodes Deleted',

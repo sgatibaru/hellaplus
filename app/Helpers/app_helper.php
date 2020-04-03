@@ -7,13 +7,15 @@ function active_business()
 {
     $app = get_option('active_shortcode');
     $model = new BusinessModel();
-    if (isset($app) && is_numeric($app)) {
-        return $model->find($app);
-    } elseif ($res = $model->find(1)) {
-        return $res;
+    if (isset($app) && is_numeric($app) && $found = $model->find($app)) {
+        $found = $found;
+    } else {
+        $found = $model->first();
     }
 
-    return false;
+    $ret = ($found != null && is_object($found)) ? $found : false;
+
+    return $ret;
 }
 
 function get_option($key, $default = FALSE)

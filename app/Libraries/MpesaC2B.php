@@ -63,19 +63,19 @@ class MpesaC2B
      * @var string $test_msisdn
      */
     public $test_msisdn;
-    /**
-     * The signed API credentials
-     * @var string $cred
-     */
-    private $cred;
+    public $confirmation_url;
 
     //Others
-    public $confirmation_url;
     public $validation_url;
     public $balance_check_result_url;
     public $status_request_result_url;
     public $reverse_transaction_result_url;
     public $lnmo_callback;
+    /**
+     * The signed API credentials
+     * @var string $cred
+     */
+    private $cred;
 
     /**
      * Construct method
@@ -87,9 +87,10 @@ class MpesaC2B
      * @throws exception if the values array is not valid
      */
 
-    public function __construct($env = false){
+    public function __construct($env = false)
+    {
         //Base URL for the API endpoints. This is basically the 'common' part of the API endpoints
-        if(active_business()->env != 'sandbox') {
+        if (active_business()->env != 'sandbox') {
             $this->env = 'live';
             $this->base_url = 'https://api.safaricom.co.ke/mpesa/';
         } else {
@@ -97,19 +98,43 @@ class MpesaC2B
             $this->base_url = 'https://sandbox.safaricom.co.ke/mpesa/';
         }
 
-        $this->consumer_key = ''; 	//App Key. Get it at https://developer.safaricom.co.ke
-        $this->consumer_secret = ''; 					//App Secret Key. Get it at https://developer.safaricom.co.ke
-        $this->paybill = ''; 									//The paybill/till/lipa na mpesa number
-        $this->lipa_na_mpesa = '';								//Lipa Na Mpesa online checkout
-        $this->lipa_na_mpesa_key = '';	//Lipa Na Mpesa online checkout password
-        $this->initiator_username = ''; 					//Initiator Username. Your API operator username
-        $this->initiator_password = ''; 				//Initiator password. Your API operator password
+        $this->consumer_key = '';    //App Key. Get it at https://developer.safaricom.co.ke
+        $this->consumer_secret = '';                    //App Secret Key. Get it at https://developer.safaricom.co.ke
+        $this->paybill = '';                                    //The paybill/till/lipa na mpesa number
+        $this->lipa_na_mpesa = '';                                //Lipa Na Mpesa online checkout
+        $this->lipa_na_mpesa_key = '';    //Lipa Na Mpesa online checkout password
+        $this->initiator_username = '';                    //Initiator Username. Your API operator username
+        $this->initiator_password = '';                //Initiator password. Your API operator password
 
         $this->callback_baseurl = '';
         $this->test_msisdn = '';
 
         //We override the above $this->cred with the testing credentials
         //$this->cred = 'jQGehsgnujMdEnVOhGq3YdX72blQnpZ+RPgYhe15kU2+UiUkauYDbsxbv+rgVgK4nKU/90R6V7CZDx4+e6KcYQMKCwJht9FfdxG3gC8g2fgxlrCvR+RnObwLOBfJ9htDVyUCJjxP31J/RoC7j25N3g7WDRfcoDXrhRUmG9NGLua+leF6ssJrNxFv6S0aT8S1ihl3aueGAuZxWr7OnbagZZElPueAZKEs8IJDKCh4xkZVUevvUysZCZuHqchMKLYDv80zK/XJ46/Ja/7F1+Qw7180bR/XcptV3ttXV56kGvJ/GMp6FUUem32o2bJMvu+6AkqJnczj0QNq5ZVtTudjvg==';
+    }
+
+    /**
+     * Client to Business
+     *
+     * This method is used to register URLs for callbacks when money is sent from the MPesa toolkit menu
+     *
+     * @param string $confirmURL The local URL that MPesa calls to confirm a payment
+     * @param string $ValidationURL The local URL that MPesa calls to validate a payment
+     * @return object Curl Response from submit_request, FALSE on failure
+     */
+
+    public function c2b()
+    {
+        $request_data = array(
+            'ShortCode' => $this->paybill,
+            'ResponseType' => 'Completed',
+            'ConfirmationURL' => $this->confirmation_url,
+            'ValidationURL' => $this->validation_url
+        );
+        $data = json_encode($request_data);
+        $url = $this->base_url . 'c2b/v1/registerurl';
+        $response = $this->submit_request($url, $data);
+        return $response;
     }
 
     /**
@@ -123,10 +148,11 @@ class MpesaC2B
      * @throws exception if the Access Token is not valid
      */
 
-    private function submit_request($url, $data){ // Returns cURL response
+    private function submit_request($url, $data)
+    { // Returns cURL response
 
-        $credentials = base64_encode($this->consumer_key.':'.$this->consumer_secret);
-        if($this->env == 'live') {
+        $credentials = base64_encode($this->consumer_key . ':' . $this->consumer_secret);
+        if ($this->env == 'live') {
             $cred_url = 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
         } else {
             $cred_url = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
@@ -134,11 +160,19 @@ class MpesaC2B
         $client = new Client();
         try {
             $request = $client->get($cred_url, array(
-                'headers'   => array('content-type'  => 'application/json', 'Authorization' => 'Basic '.$credentials)
+                'headers' => array('content-type' => 'application/json', 'Authorization' => 'Basic ' . $credentials)
             ));
-            $response = $request->getBody()->getContents();
+            if ($body = $request->getBody()) {
+                $response = $body->getContents();
+            } else {
+                return false;
+            }
         } catch (RequestException $e) {
-            $response = $e->getResponse()->getBody()->getContents();
+            if ($e->hasResponse()) {
+                $response = $e->getResponse()->getBody()->getContents();
+            } else {
+                return false;
+            }
         }
 
         $response = @json_decode($response);
@@ -155,40 +189,25 @@ class MpesaC2B
             $client = new Client();
             try {
                 $request = $client->post($url, array(
-                    'headers'   => array('content-type'  => 'application/json', 'Authorization' => 'Bearer '.$access_token),
-                    'body'      => $data
+                    'headers' => array('content-type' => 'application/json', 'Authorization' => 'Bearer ' . $access_token),
+                    'body' => $data
                 ));
-                $response = $request->getBody()->getContents();
+                if ($body = $request->getBody()) {
+                    $response = $body->getContents();
+                } else {
+                    return false;
+                }
             } catch (RequestException $e) {
-                $response = $e->getResponse()->getBody()->getContents();
+                if ($e->hasResponse()) {
+                    $response = $e->getResponse()->getBody()->getContents();
+                } else {
+                    return false;
+                }
             }
             return $response;
         } else {
             return FALSE;
         }
-    }
-
-    /**
-     * Client to Business
-     *
-     * This method is used to register URLs for callbacks when money is sent from the MPesa toolkit menu
-     *
-     * @param string $confirmURL The local URL that MPesa calls to confirm a payment
-     * @param string $ValidationURL The local URL that MPesa calls to validate a payment
-     * @return object Curl Response from submit_request, FALSE on failure
-     */
-
-    public function c2b(){
-        $request_data = array(
-            'ShortCode' => $this->paybill,
-            'ResponseType' => 'Completed',
-            'ConfirmationURL' => $this->confirmation_url,
-            'ValidationURL' => $this->validation_url
-        );
-        $data = json_encode($request_data);
-        $url = $this->base_url.'c2b/v1/registerurl';
-        $response = $this->submit_request($url, $data);
-        return $response;
     }
 
     /**
@@ -202,7 +221,8 @@ class MpesaC2B
      * @return object Curl Response from submit_request, FALSE on failure
      */
 
-    public function simulate_c2b($amount, $msisdn, $ref){
+    public function simulate_c2b($amount, $msisdn, $ref)
+    {
         $data = array(
             'ShortCode' => $this->paybill,
             'CommandID' => 'CustomerPayBillOnline',
@@ -211,7 +231,7 @@ class MpesaC2B
             'BillRefNumber' => $ref
         );
         $data = json_encode($data);
-        $url = $this->base_url.'c2b/v1/simulate';
+        $url = $this->base_url . 'c2b/v1/simulate';
         $response = $this->submit_request($url, $data);
         return $response;
     }
@@ -223,7 +243,8 @@ class MpesaC2B
      *
      * @return object Curl Response from submit_request, FALSE on failure
      */
-    public function check_balance(){
+    public function check_balance()
+    {
         $data = array(
             'CommandID' => 'AccountBalance',
             'PartyA' => $this->paybill,
@@ -235,9 +256,27 @@ class MpesaC2B
             'ResultURL' => $this->balance_check_result_url
         );
         $data = json_encode($data);
-        $url = $this->base_url.'accountbalance/v1/query';
+        $url = $this->base_url . 'accountbalance/v1/query';
         $response = $this->submit_request($url, $data);
         return $response;
+    }
+
+    private function get_credential()
+    {
+        $credential = get_option($this->paybill . '_credential', FALSE);
+        if ($credential && $credential != '') {
+            $this->cred = $credential;
+        } else {
+            if ($this->env == 'sandbox') {
+                $pubkey = file_get_contents(dirname(__FILE__) . '/cert-sandbox.cer');
+            } else {
+                $pubkey = file_get_contents(dirname(__FILE__) . '/cert-prod.cer');
+            }
+
+            openssl_public_encrypt($this->initiator_password, $output, $pubkey, OPENSSL_PKCS1_PADDING);
+            $this->cred = base64_encode($output);
+        }
+        return $this->cred;
     }
 
     /**
@@ -249,7 +288,8 @@ class MpesaC2B
      * @return object Curl Response from submit_request, FALSE on failure
      */
 
-    public function status_request($transaction = 'LH7819VXPE'){
+    public function status_request($transaction = 'LH7819VXPE')
+    {
         $data = array(
             'CommandID' => 'TransactionStatusQuery',
             'PartyA' => $this->paybill,
@@ -263,7 +303,7 @@ class MpesaC2B
             'Occassion' => 'Test'
         );
         $data = json_encode($data);
-        $url = $this->base_url.'transactionstatus/v1/query';
+        $url = $this->base_url . 'transactionstatus/v1/query';
         $response = $this->submit_request($url, $data);
         return $response;
     }
@@ -279,7 +319,8 @@ class MpesaC2B
      * @return object Curl Response from submit_request, FALSE on failure
      */
 
-    public function reverse_transaction($receiver, $trx_id, $amount){
+    public function reverse_transaction($receiver, $trx_id, $amount)
+    {
         $data = array(
             'CommandID' => 'TransactionReversal',
             'ReceiverParty' => $receiver,
@@ -293,24 +334,25 @@ class MpesaC2B
             'TransactionID' => $trx_id
         );
         $data = json_encode($data);
-        $url = $this->base_url.'reversal/v1/request';
+        $url = $this->base_url . 'reversal/v1/request';
         $response = $this->submit_request($url, $data);
         return $response;
     }
 
     /*********************************************************************
      *
-     * 	LNMO APIs
+     *    LNMO APIs
      *
      * *******************************************************************/
 
-    public function lnmo_request($amount, $phone, $ref = "Payment"){
-        if(!is_numeric($amount) || $amount < 10 || !is_numeric($phone)){
+    public function lnmo_request($amount, $phone, $ref = "Payment")
+    {
+        if (!is_numeric($amount) || $amount < 10 || !is_numeric($phone)) {
             throw new Exception("Invalid amount and/or phone number. Amount should be 10 or more, phone number should be in the format 254xxxxxxxx");
             return FALSE;
         }
         $timestamp = date('YmdHis');
-        $passwd = base64_encode($this->lipa_na_mpesa.$this->lipa_na_mpesa_key.$timestamp);
+        $passwd = base64_encode($this->lipa_na_mpesa . $this->lipa_na_mpesa_key . $timestamp);
         $data = array(
             'BusinessShortCode' => $this->lipa_na_mpesa,
             'Password' => $passwd,
@@ -325,18 +367,19 @@ class MpesaC2B
             'TransactionDesc' => 'testing too',
         );
         $data = json_encode($data);
-        $url = $this->base_url.'stkpush/v1/processrequest';
+        $url = $this->base_url . 'stkpush/v1/processrequest';
 
         $response = $this->submit_request($url, $data);
 
         return $response;
     }
 
-    private function lnmo_query($checkoutRequestID = null){
+    private function lnmo_query($checkoutRequestID = null)
+    {
         $timestamp = date('YmdHis');
-        $passwd = base64_encode($this->lipa_na_mpesa.$this->lipa_na_mpesa_key.$timestamp);
+        $passwd = base64_encode($this->lipa_na_mpesa . $this->lipa_na_mpesa_key . $timestamp);
 
-        if($checkoutRequestID == null || $checkoutRequestID == ''){
+        if ($checkoutRequestID == null || $checkoutRequestID == '') {
             //throw new Exception("Checkout Request ID cannot be null");
             return FALSE;
         }
@@ -348,25 +391,8 @@ class MpesaC2B
             'CheckoutRequestID' => $checkoutRequestID
         );
         $data = json_encode($data);
-        $url = $this->base_url.'stkpushquery/v1/query';
+        $url = $this->base_url . 'stkpushquery/v1/query';
         $response = $this->submit_request($url, $data);
         return $response;
-    }
-
-    private function get_credential() {
-        $credential = get_option($this->paybill.'_credential', FALSE);
-        if($credential && $credential != '') {
-            $this->cred = $credential;
-        } else {
-            if($this->env == 'sandbox') {
-                $pubkey = file_get_contents(dirname(__FILE__) . '/cert-sandbox.cer');
-            } else {
-                $pubkey = file_get_contents(dirname(__FILE__) . '/cert-prod.cer');
-            }
-
-            openssl_public_encrypt($this->initiator_password, $output, $pubkey, OPENSSL_PKCS1_PADDING);
-            $this->cred = base64_encode($output);
-        }
-        return $this->cred;
     }
 }

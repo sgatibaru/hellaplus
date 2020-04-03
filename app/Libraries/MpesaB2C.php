@@ -113,9 +113,17 @@ class MpesaB2C
             $request = $client->get($cred_url, array(
                 'headers'   => array('content-type'  => 'application/json', 'Authorization' => 'Basic '.$credentials)
             ));
-            $response = $request->getBody()->getContents();
+            if( $body = $request->getBody() ) {
+                $response = $body->getContents();
+            } else {
+                return false;
+            }
         } catch (RequestException $e) {
-            $response = $e->getResponse()->getBody()->getContents();
+            if($e->hasResponse() ) {
+                $response = $e->getResponse()->getBody()->getContents();
+            } else {
+                return false;
+            }
         }
 
         $response = @json_decode($response);
@@ -135,9 +143,17 @@ class MpesaB2C
                     'headers'   => array('content-type'  => 'application/json', 'Authorization' => 'Bearer '.$access_token),
                     'body'      => $data
                 ));
-                $response = $request->getBody()->getContents();
+                if( $body = $request->getBody() ) {
+                    $response = $body->getContents();
+                } else {
+                    return false;
+                }
             } catch (RequestException $e) {
-                $response = $e->getResponse()->getBody()->getContents();
+                if($e->hasResponse() ) {
+                    $response = $e->getResponse()->getBody()->getContents();
+                } else {
+                    return false;
+                }
             }
             return $response;
         } else {

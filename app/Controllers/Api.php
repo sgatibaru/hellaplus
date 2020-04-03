@@ -179,6 +179,7 @@ class Api extends BaseController
             }
         }
         set_option($shortcode.'_balance', $actual);
+        set_option($shortcode.'_last_balance_check', time());
         //TODO: Maybe log the failed information in the logs table
 
         $response = [

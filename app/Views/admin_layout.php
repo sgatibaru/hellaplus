@@ -45,7 +45,7 @@ $active_business = active_business();
         <ul class="nav navbar-nav">
             <li><a href="<?php echo site_url('admin'); ?>">Overview</a></li>
             <li>
-                <a href="<?php echo site_url('admin/transactions'); ?>"><?php echo (isset($active_business) && $active_business->type == 'B2C') ? 'Disbursements' : 'Transactions'; ?></a>
+                <a href="<?php echo site_url('admin/transactions'); ?>"><?php echo (isset($active_business) && @$active_business->type == 'B2C') ? 'Disbursements' : 'Transactions'; ?></a>
             </li>
             <li><a href="<?php echo site_url('admin/customers'); ?>">My Customers</a></li>
             <li><a href="<?php echo site_url('admin/paybill/settings'); ?>">Settings</a></li>
@@ -61,6 +61,7 @@ $active_business = active_business();
             <ul class="dropdown-menu">
                 <li role="presentation"><a role="menuitem" data-toggle="modal" data-target="#addShortcode"> <i
                                 class="mdi mdi-plus"></i> New Shortcode</a></li>
+                <li class="divider"></li>
                 <?php
                 $businesses = new BusinessModel();
                 $businesses = $businesses->findAll();
@@ -79,6 +80,10 @@ $active_business = active_business();
                     }
                 }
                 ?>
+                <li class="divider"></li>
+                <li>
+                    <a href="<?php echo site_url(route_to('admin.settings.shortcodes')); ?>"><i class="mdi mdi-wrench"></i> Manage Shortcodes</a>
+                </li>
             </ul>
         </div>
         <div class="dropdown">
@@ -104,7 +109,7 @@ $active_business = active_business();
 <div class="container">
     <div class="page-heading">
         <?php
-        if ($active_business->type != 'B2C') {
+        if (@$active_business->type != 'B2C') {
             if(isset($active_business->api_setup) && $active_business->api_setup != 1) {
                 ?>
                 <div>
@@ -172,7 +177,7 @@ $active_business = active_business();
                 <img src="<?php echo base_url('assets/images/avatar.png'); ?>" class="img-circle img-responsive">
             </div>
             <div class="heading-title">
-                <h2><?php echo strtoupper($active_business->name); ?></h2>
+                <h2><?php echo ($active_business) ? strtoupper($active_business->name) : 'No Shortcodes set up!'; ?></h2>
                 <p>This is your dashboard. Overview of almost everything.</p>
             </div>
         </div>
@@ -184,7 +189,7 @@ $active_business = active_business();
             <img src="<?php echo base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png'); ?>"
                  class="img-responsive">
         </div>
-        <p class="text-right pull-right">&copy; <?php echo date('Y') ?> Bennito254 <span>•</span> All Rights Reserved.
+        <p class="text-right pull-right">&copy; <?php echo date('Y') ?> Bennito254 <span>•</span> Version <?php echo get_option('_app_version', '0.0.1'); ?>
         </p>
     </footer>
 
