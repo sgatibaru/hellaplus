@@ -201,7 +201,15 @@ $sql = str_replace(array("\r", "\n"), '', $sql);
 //echo $sql;
 //exit;
 $SUCCESS = TRUE;
-if (!mysqli_multi_query($conn, $sql)) {
+$X = mysqli_multi_query($conn, $sql);
+do {
+    if ($result = mysqli_store_result($conn)) {
+        $result->free();
+    }
+
+} while (mysqli_more_results($conn) && mysqli_next_result($conn));
+
+if (!$X) {
     $SUCCESS = FALSE;
     $ERROR = "Failed to set up database: " . mysqli_error($conn);
 } else {
@@ -210,7 +218,15 @@ if (!mysqli_multi_query($conn, $sql)) {
     $conn = mysqli_connect($_SESSION['database']['server'], $_SESSION['database']['username'], $_SESSION['database']['password'], $_SESSION['database']['database']);
     $sql = "INSERT INTO `{$prefix}users` (ip_address, username, password, email, created_on, first_name, last_name) VALUES ('127.0.0.1', '".mysqli_escape_string($conn, $_SESSION['user']['email'])."', '".mysqli_escape_string($conn, $password)."', '".mysqli_escape_string($conn, $_SESSION['user']['email'])."', '{$time}', '".mysqli_escape_string($conn, $_SESSION['user']['fname'])."', '".mysqli_escape_string($conn, $_SESSION['user']['lname'])."');";
     $sql .= "INSERT INTO `{$prefix}users_groups` (user_id, group_id) VALUES (1, 1);";
-    if(!mysqli_multi_query($conn, $sql)) {
+    $X = TRUE;
+    $X = mysqli_multi_query($conn, $sql);
+    do {
+        if ($result = mysqli_store_result($conn)) {
+            $result->free();
+        }
+
+    } while (mysqli_more_results($conn) && mysqli_next_result($conn));
+    if(!$X) {
         $SUCCESS = FALSE;
         $ERROR = "Failed to set up Admin Account: " . mysqli_error($conn);
     } else {
@@ -284,4 +300,3 @@ if ($SUCCESS) {
 }
 
 include 'footer.php';
-?>
