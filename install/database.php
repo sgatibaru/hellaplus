@@ -40,19 +40,19 @@ include 'header.php';
         <form action="" data-parsley-validate="" method="POST">
             <div class="form-group">
                 <label for="server">Database Server</label>
-                <input type="text" id="server" class="form-control" name="db_server" value="localhost" required/>
+                <input type="text" id="server" class="form-control" name="db_server" value="localhost" required />
             </div>
             <div class="form-group">
                 <label for="name">Database Name</label>
-                <input type="text" id="name" class="form-control" name="db_name" required/>
+                <input type="text" id="name" class="form-control" name="db_name" required />
             </div>
             <div class="form-group">
                 <label for="username">Database UserName</label>
-                <input type="text" id="username" class="form-control" name="db_username" required/>
+                <input type="text" id="username" class="form-control" name="db_username" required />
             </div>
             <div class="form-group">
                 <label for="password">Database Password</label>
-                <input type="text" id="password" class="form-control" name="db_password" required/>
+                <input type="text" id="password" class="form-control" name="db_password" />
             </div>
             <div class="form-group">
                 <label for="prefix">Database Prefix</label>
