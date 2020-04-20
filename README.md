@@ -14,9 +14,10 @@ Hellaplus is a dashboard, built on CodeIgniter v4 and Bootstrap v4 to manage M-P
 
 ## Manual Installation
 - Import the ```database.sql``` file into your database
-- Rename example.env.php to env.php
-- Update the settings in the new env.php file to match your server
+- Rename ```example.env.php``` to ```env.php```
+- Update the settings in the new ```env.php``` file to match your server
 - Done
+Default E-Mail is ```admin@admin.com``` and password is ```password```
 
 ## Known issues
 - Initiator information is invalid for sandbox apps that do not have Security Credential set.
