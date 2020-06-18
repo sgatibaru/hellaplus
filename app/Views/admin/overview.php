@@ -10,6 +10,8 @@ $totalSuccessRows = $totalTransRows-$totalReversalRows;
 
 $incomeLoaded = $totalTransRows > 0 ? ($totalSuccessRows/$totalTransRows)*100 : 0;
 $reversalLoaded = $totalTransRows > 0 ? 100-$incomeLoaded : 0;
+$todaysTransactions = is_numeric($todaysTransactions) ? $todaysTransactions : 0;
+$todaysReversals = is_numeric($todaysReversals) ? $todaysReversals : 0;
 ?>
 <script>
     var totalIncome = "<?php echo $todaysTransactions; ?>";
