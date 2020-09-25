@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CodeIgniter
  *
@@ -96,8 +97,7 @@ if (! function_exists('timezone_select'))
 			$selected = ($timezone === $default) ? 'selected' : '';
 			$buffer  .= "<option value='{$timezone}' {$selected}>{$timezone}</option>" . PHP_EOL;
 		}
-		$buffer .= '</select>' . PHP_EOL;
 
-		return $buffer;
+		return $buffer . ('</select>' . PHP_EOL);
 	}
 }

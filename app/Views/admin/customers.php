@@ -38,6 +38,7 @@
                             <h4 class="modal-title">New Customer</h4>
                         </div>
                         <form  class="simcy-form" action="<?php echo site_url('admin/customers/add'); ?>" data-parsley-validate="" loader="true" method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="business" value="<?php echo is_object(active_business()) && isset(active_business()->id) ? active_business()->id : ''; ?>" />
                             <div class="modal-body">
                                 <div class="form-group">
                                     <label for="msg">First Name</label>
@@ -67,7 +68,9 @@
             </div>
             <div class="card-body">
                 <?php
-                $customers = (new \App\Models\CustomerModel())->findAll();
+                $customers = (new \App\Models\CustomerModel())->whereIn('business', function () {
+                    return (new \App\Models\BusinessModel())->select('id')->where('user', (new \App\Libraries\IonAuth())->getUserId());
+                })->findAll();
                 $business = active_business();
                 if($customers && count($customers) > 0) {
                     ?>

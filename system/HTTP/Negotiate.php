@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * CodeIgniter
  *
@@ -67,7 +66,7 @@ class Negotiate
 	/**
 	 * Constructor
 	 *
-	 * @param \CodeIgniter\HTTP\RequestInterface $request
+	 * @param \CodeIgniter\HTTP\RequestInterface|null $request
 	 */
 	public function __construct(RequestInterface $request = null)
 	{
@@ -179,7 +178,7 @@ class Negotiate
 	 */
 	public function language(array $supported): string
 	{
-		return $this->getBestMatch($supported, $this->request->getHeaderLine('accept-language'));
+		return $this->getBestMatch($supported, $this->request->getHeaderLine('accept-language'), false, false, true);
 	}
 
 	//--------------------------------------------------------------------
@@ -198,10 +197,11 @@ class Negotiate
 	 * @param boolean $enforceTypes If TRUE, will compare media types and sub-types.
 	 * @param boolean $strictMatch  If TRUE, will return empty string on no match.
 	 *                              If FALSE, will return the first supported element.
+	 * @param boolean $matchLocales If TRUE, will match locale sub-types to a broad type (fr-FR = fr)
 	 *
 	 * @return string Best match
 	 */
-	protected function getBestMatch(array $supported, string $header = null, bool $enforceTypes = false, bool $strictMatch = false): string
+	protected function getBestMatch(array $supported, string $header = null, bool $enforceTypes = false, bool $strictMatch = false, bool $matchLocales = false): string
 	{
 		if (empty($supported))
 		{
@@ -232,7 +232,7 @@ class Negotiate
 			// If an acceptable value is supported, return it
 			foreach ($supported as $available)
 			{
-				if ($this->match($accept, $available, $enforceTypes))
+				if ($this->match($accept, $available, $enforceTypes, $matchLocales))
 				{
 					return $available;
 				}
@@ -337,12 +337,14 @@ class Negotiate
 	/**
 	 * Match-maker
 	 *
-	 * @param  array   $acceptable
-	 * @param  string  $supported
-	 * @param  boolean $enforceTypes
+	 * @param array   $acceptable
+	 * @param string  $supported
+	 * @param boolean $enforceTypes
+	 * @param boolean $matchLocales
+	 *
 	 * @return boolean
 	 */
-	protected function match(array $acceptable, string $supported, bool $enforceTypes = false): bool
+	protected function match(array $acceptable, string $supported, bool $enforceTypes = false, $matchLocales = false): bool
 	{
 		$supported = $this->parseHeader($supported);
 		if (is_array($supported) && count($supported) === 1)
@@ -361,6 +363,12 @@ class Negotiate
 		if ($enforceTypes)
 		{
 			return $this->matchTypes($acceptable, $supported);
+		}
+
+		// Do we need to match locales against broader locales?
+		if ($matchLocales)
+		{
+			return $this->matchLocales($acceptable, $supported);
 		}
 
 		return false;
@@ -409,6 +417,8 @@ class Negotiate
 	 */
 	public function matchTypes(array $acceptable, array $supported): bool
 	{
+		// PHPDocumentor v2 cannot parse yet the shorter list syntax,
+		// causing no API generation for the file.
 		list($aType, $aSubType) = explode('/', $acceptable['value']);
 		list($sType, $sSubType) = explode('/', $supported['value']);
 
@@ -429,4 +439,25 @@ class Negotiate
 	}
 
 	//--------------------------------------------------------------------
+
+	/**
+	 * Will match locales against their broader pairs, so that fr-FR would
+	 * match a supported localed of fr
+	 *
+	 * @param array $acceptable
+	 * @param array $supported
+	 *
+	 * @return boolean
+	 */
+	public function matchLocales(array $acceptable, array $supported): bool
+	{
+		$aBroad = mb_strpos($acceptable['value'], '-') > 0
+			? mb_substr($acceptable['value'], 0, mb_strpos($acceptable['value'], '-'))
+			: $acceptable['value'];
+		$sBroad = mb_strpos($supported['value'], '-') > 0
+			? mb_substr($supported['value'], 0, mb_strpos($supported['value'], '-'))
+			: $supported['value'];
+
+		return strtolower($aBroad) === strtolower($sBroad);
+	}
 }

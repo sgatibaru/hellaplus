@@ -4,12 +4,22 @@
 namespace App\Entities;
 
 
+use App\Models\UsersModel;
 use Carbon\Carbon;
 use CodeIgniter\Entity;
 use Config\Database;
 
 class BusinessEntity extends Entity
 {
+    public function getOwner()
+    {
+        if(!empty($this->attributes['user'])) {
+            return (new UsersModel())->find($this->attributes['user']);
+        }
+
+        return false;
+    }
+
     public function getTodaysTotalTransactions()
     {
         $builder = Database::connect()->table('transactions');

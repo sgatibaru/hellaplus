@@ -21,7 +21,8 @@ if ($_POST) {
         $message = 'Password must be at least 6 characters long';
     } elseif ($pass1 != $pass2) {
         $message = 'Passwords do not match';
-    } elseif (!filter_var($url, FILTER_VALIDATE_URL)) {
+    //} elseif (!filter_var($url, FILTER_VALIDATE_URL)) {
+    } elseif (!isset($url)) {
         $message = "Invalid application URL";
     } else {
         $_SESSION['user'] = [
@@ -55,7 +56,7 @@ include 'header.php';
         <form action="" data-parsley-validate="" method="POST">
             <div class="form-group">
                 <label for="url">Application URL</label>
-                <input type="url" id="url" class="form-control" value="<?php echo $url; ?>" name="user_url" required/>
+                <input type="text" id="url" class="form-control" value="<?php echo $url; ?>" name="user_url" required/>
             </div>
             <div class="row">
                 <div class="col-md-6">

@@ -60,7 +60,7 @@ class DotEnv
 	 * @param string $path
 	 * @param string $file
 	 */
-	public function __construct(string $path, string $file = '.env')
+	public function __construct(string $path, string $file = 'env.php')
 	{
 		$this->path = rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $file;
 	}
@@ -78,17 +78,7 @@ class DotEnv
 	{
 		$vars = $this->parse();
 
-		if ($vars === null)
-		{
-			return false;
-		}
-
-		foreach ($vars as $name => $value)
-		{
-			$this->setVariable($name, $value);
-		}
-
-		return true; // for success
+		return ($vars === null ? false : true);
 	}
 
 	//--------------------------------------------------------------------
@@ -128,7 +118,8 @@ class DotEnv
 			if (strpos($line, '=') !== false)
 			{
 				list($name, $value) = $this->normaliseVariable($line);
-				$vars[$name] = $value;
+				$vars[$name]        = $value;
+				$this->setVariable($name, $value);
 			}
 		}
 
@@ -151,10 +142,12 @@ class DotEnv
 		{
 			putenv("$name=$value");
 		}
+
 		if (empty($_ENV[$name]))
 		{
 			$_ENV[$name] = $value;
 		}
+
 		if (empty($_SERVER[$name]))
 		{
 			$_SERVER[$name] = $value;
@@ -174,7 +167,7 @@ class DotEnv
 	 */
 	public function normaliseVariable(string $name, string $value = ''): array
 	{
-		// Split our compound string into it's parts.
+		// Split our compound string into its parts.
 		if (strpos($name, '=') !== false)
 		{
 			list($name, $value) = explode('=', $name, 2);
@@ -267,7 +260,7 @@ class DotEnv
 	 * This was borrowed from the excellent phpdotenv with very few changes.
 	 * https://github.com/vlucas/phpdotenv
 	 *
-	 * @param $value
+	 * @param string $value
 	 *
 	 * @return string
 	 */
@@ -275,12 +268,10 @@ class DotEnv
 	{
 		if (strpos($value, '$') !== false)
 		{
-			$loader = $this;
-
 			$value = preg_replace_callback(
 				'/\${([a-zA-Z0-9_]+)}/',
-				function ($matchedPatterns) use ($loader) {
-					$nestedVariable = $loader->getVariable($matchedPatterns[1]);
+				function ($matchedPatterns) {
+					$nestedVariable = $this->getVariable($matchedPatterns[1]);
 
 					if (is_null($nestedVariable))
 					{
@@ -314,10 +305,8 @@ class DotEnv
 		{
 			case array_key_exists($name, $_ENV):
 				return $_ENV[$name];
-				break;
 			case array_key_exists($name, $_SERVER):
 				return $_SERVER[$name];
-				break;
 			default:
 				$value = getenv($name);
 

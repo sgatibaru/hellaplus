@@ -54,27 +54,29 @@ $('nav.navigation a[href="'+window.location+'"]').parent().addClass('active');
 $('option[value="0"]').attr('disabled',true);
 
 $(document).ready(function() {
-    $('#datatable').DataTable({
-        dom: 'Bfrtip',
-        buttons: [{
-            extend: 'copyHtml5',
-            exportOptions: {
-                columns: [ 0, 1, 2, 3, 4, 5, 6 ]
-            }
-        },
-            {
-                extend: 'excelHtml5',
+    $('#datatable').each(function() {
+        $(this).DataTable({
+            dom: 'Bfrtip',
+            buttons: [{
+                extend: 'copyHtml5',
                 exportOptions: {
                     columns: [ 0, 1, 2, 3, 4, 5, 6 ]
                 }
             },
-            {
-                extend: 'pdfHtml5',
-                exportOptions: {
-                    columns: [ 0, 1, 2, 3, 4, 5, 6 ]
+                {
+                    extend: 'excelHtml5',
+                    exportOptions: {
+                        columns: [ 0, 1, 2, 3, 4, 5, 6 ]
+                    }
+                },
+                {
+                    extend: 'pdfHtml5',
+                    exportOptions: {
+                        columns: [ 0, 1, 2, 3, 4, 5, 6 ]
+                    }
                 }
-            }
-        ]
+            ]
+        });
     });
     $('#b2c').DataTable({
         dom: 'Bfrtip',

@@ -79,28 +79,43 @@ class FileRules
 	 *
 	 * @param string $blank
 	 * @param string $name
-	 * @param array  $data
 	 *
 	 * @return boolean
 	 */
-	public function uploaded(string $blank = null, string $name, array $data): bool
+	public function uploaded(string $blank = null, string $name): bool
 	{
-		$file = $this->request->getFile($name);
-
-		if (is_null($file))
+		if (! ($files = $this->request->getFileMultiple($name)))
 		{
-			return false;
+			$files = [$this->request->getFile($name)];
 		}
 
-		if (ENVIRONMENT === 'testing')
+		foreach ($files as $file)
 		{
-			return $file->getError() === 0;
+			if (is_null($file))
+			{
+				return false;
+			}
+
+			if (ENVIRONMENT === 'testing')
+			{
+				if ($file->getError() !== 0)
+				{
+					return false;
+				}
+			}
+			else
+			{
+				// Note: cannot unit test this; no way to over-ride ENVIRONMENT?
+				// @codeCoverageIgnoreStart
+				if (! $file->isValid())
+				{
+					return false;
+				}
+				// @codeCoverageIgnoreEnd
+			}
 		}
 
-		// Note: cannot unit test this; no way to over-ride ENVIRONMENT?
-		// @codeCoverageIgnoreStart
-		return $file->isValid();
-		// @codeCoverageIgnoreEnd
+		return true;
 	}
 
 	//--------------------------------------------------------------------
@@ -110,11 +125,10 @@ class FileRules
 	 *
 	 * @param string|null $blank
 	 * @param string      $params
-	 * @param array       $data
 	 *
 	 * @return boolean
 	 */
-	public function max_size(string $blank = null, string $params, array $data): bool
+	public function max_size(string $blank = null, string $params): bool
 	{
 		// Grab the file name off the top of the $params
 		// after we split it.
@@ -138,6 +152,11 @@ class FileRules
 				return true;
 			}
 
+			if ($file->getError() === UPLOAD_ERR_INI_SIZE)
+			{
+				return false;
+			}
+
 			if ($file->getSize() / 1024 > $params[0])
 			{
 				return false;
@@ -155,11 +174,10 @@ class FileRules
 	 *
 	 * @param string|null $blank
 	 * @param string      $params
-	 * @param array       $data
 	 *
 	 * @return boolean
 	 */
-	public function is_image(string $blank = null, string $params, array $data): bool
+	public function is_image(string $blank = null, string $params): bool
 	{
 		// Grab the file name off the top of the $params
 		// after we split it.
@@ -203,11 +221,10 @@ class FileRules
 	 *
 	 * @param string|null $blank
 	 * @param string      $params
-	 * @param array       $data
 	 *
 	 * @return boolean
 	 */
-	public function mime_in(string $blank = null, string $params, array $data): bool
+	public function mime_in(string $blank = null, string $params): bool
 	{
 		// Grab the file name off the top of the $params
 		// after we split it.
@@ -231,7 +248,7 @@ class FileRules
 				return true;
 			}
 
-			if (! in_array($file->getMimeType(), $params))
+			if (! in_array($file->getMimeType(), $params, true))
 			{
 				return false;
 			}
@@ -247,11 +264,10 @@ class FileRules
 	 *
 	 * @param string|null $blank
 	 * @param string      $params
-	 * @param array       $data
 	 *
 	 * @return boolean
 	 */
-	public function ext_in(string $blank = null, string $params, array $data): bool
+	public function ext_in(string $blank = null, string $params): bool
 	{
 		// Grab the file name off the top of the $params
 		// after we split it.
@@ -275,7 +291,7 @@ class FileRules
 				return true;
 			}
 
-			if (! in_array($file->getExtension(), $params))
+			if (! in_array($file->getExtension(), $params, true))
 			{
 				return false;
 			}
@@ -292,11 +308,10 @@ class FileRules
 	 *
 	 * @param string|null $blank
 	 * @param string      $params
-	 * @param array       $data
 	 *
 	 * @return boolean
 	 */
-	public function max_dims(string $blank = null, string $params, array $data): bool
+	public function max_dims(string $blank = null, string $params): bool
 	{
 		// Grab the file name off the top of the $params
 		// after we split it.

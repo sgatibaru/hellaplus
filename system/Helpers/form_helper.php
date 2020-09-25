@@ -69,6 +69,12 @@ if (! function_exists('form_open'))
 		} // If an action is not a full URL then turn it into one
 		elseif (strpos($action, '://') === false)
 		{
+			// If an action has {locale}
+			if (strpos($action, '{locale}') !== false)
+			{
+				$action = str_replace('{locale}', Services::request()->getLocale(), $action);
+			}
+
 			$action = site_url($action);
 		}
 
@@ -96,7 +102,7 @@ if (! function_exists('form_open'))
 		$before = Services::filters()
 						  ->getFilters()['before'];
 
-		if ((in_array('csrf', $before) || array_key_exists('csrf', $before)) && strpos($action, base_url()) !== false && ! stripos($form, 'method="get"'))
+		if ((in_array('csrf', $before, true) || array_key_exists('csrf', $before)) && strpos($action, base_url()) !== false && ! stripos($form, 'method="get"'))
 		{
 			$form .= csrf_field($csrfId ?? null);
 		}
@@ -180,7 +186,7 @@ if (! function_exists('form_hidden'))
 
 		if (! is_array($value))
 		{
-			$form .= '<input type="hidden" name="' . $name . '" value="' . esc($value, 'html') . "\" style=\"display:none;\" />\n";
+			$form .= '<input type="hidden" name="' . $name . '" value="' . esc($value) . "\" style=\"display:none;\" />\n";
 		}
 		else
 		{
@@ -239,7 +245,7 @@ if (! function_exists('form_password'))
 	 */
 	function form_password($data = '', string $value = '', $extra = ''): string
 	{
-		is_array($data) || $data = ['name' => $data];
+		is_array($data) || $data = ['name' => $data]; // @phpstan-ignore-line
 		$data['type']            = 'password';
 
 		return form_input($data, $value, $extra);
@@ -267,7 +273,7 @@ if (! function_exists('form_upload'))
 			'type' => 'file',
 			'name' => '',
 		];
-		is_array($data) || $data = ['name' => $data];
+		is_array($data) || $data = ['name' => $data]; // @phpstan-ignore-line
 		$data['type']            = 'file';
 
 		return '<input ' . parse_form_attributes($data, $defaults) . stringify_attributes($extra) . " />\n";
@@ -304,7 +310,18 @@ if (! function_exists('form_textarea'))
 			unset($data['value']); // textareas don't use the value attribute
 		}
 
-		return '<textarea ' . parse_form_attributes($data, $defaults) . stringify_attributes($extra) . '>'
+		// Unsets default rows and cols if defined in extra field as array or string.
+		if ((is_array($extra) && array_key_exists('rows', $extra)) || (is_string($extra) && strpos(strtolower(preg_replace('/\s+/', '', $extra)), 'rows=') !== false))
+		{
+			unset($defaults['rows']);
+		}
+
+		if ((is_array($extra) && array_key_exists('cols', $extra)) || (is_string($extra) && strpos(strtolower(preg_replace('/\s+/', '', $extra)), 'cols=') !== false))
+		{
+			unset($defaults['cols']);
+		}
+
+		return '<textarea ' . rtrim(parse_form_attributes($data, $defaults)) . stringify_attributes($extra) . '>'
 				. htmlspecialchars($val)
 				. "</textarea>\n";
 	}
@@ -372,8 +389,8 @@ if (! function_exists('form_dropdown'))
 			$defaults = ['name' => $data];
 		}
 
-		is_array($selected) || $selected = [$selected];
-		is_array($options) || $options   = [$options];
+		is_array($selected) || $selected = [$selected]; // @phpstan-ignore-line
+		is_array($options) || $options   = [$options]; // @phpstan-ignore-line
 
 		// If no selected state was submitted we will attempt to set it automatically
 		if (empty($selected))
@@ -406,17 +423,17 @@ if (! function_exists('form_dropdown'))
 				$form .= '<optgroup label="' . $key . "\">\n";
 				foreach ($val as $optgroup_key => $optgroup_val)
 				{
-					$sel   = in_array($optgroup_key, $selected) ? ' selected="selected"' : '';
+					$sel   = in_array($optgroup_key, $selected, true) ? ' selected="selected"' : '';
 					$form .= '<option value="' . htmlspecialchars($optgroup_key) . '"' . $sel . '>'
-							. (string) $optgroup_val . "</option>\n";
+							. $optgroup_val . "</option>\n";
 				}
 				$form .= "</optgroup>\n";
 			}
 			else
 			{
 				$form .= '<option value="' . htmlspecialchars($key) . '"'
-						. (in_array($key, $selected) ? ' selected="selected"' : '') . '>'
-						. (string) $val . "</option>\n";
+						. (in_array($key, $selected, true) ? ' selected="selected"' : '') . '>'
+						. $val . "</option>\n";
 			}
 		}
 
@@ -465,7 +482,10 @@ if (! function_exists('form_checkbox'))
 		}
 		else
 		{
-			unset($defaults['checked']);
+			if (isset($defaults['checked']))
+			{
+				unset($defaults['checked']);
+			}
 		}
 
 		return '<input ' . parse_form_attributes($data, $defaults) . stringify_attributes($extra) . " />\n";
@@ -488,7 +508,7 @@ if (! function_exists('form_radio'))
 	 */
 	function form_radio($data = '', string $value = '', bool $checked = false, $extra = ''): string
 	{
-		is_array($data) || $data = ['name' => $data];
+		is_array($data) || $data = ['name' => $data]; // @phpstan-ignore-line
 		$data['type']            = 'radio';
 
 		return form_checkbox($data, $value, $checked, $extra);
@@ -645,9 +665,7 @@ if (! function_exists('form_datalist'))
 			$out .= "<option value='$option'>" . "\n";
 		}
 
-		$out .= '</datalist>' . "\n";
-
-		return $out;
+		return $out . ('</datalist>' . "\n");
 	}
 }
 
@@ -741,7 +759,7 @@ if (! function_exists('set_value'))
 			$value = $request->getPost($field) ?? $default;
 		}
 
-		return ($html_escape) ? esc($value, 'html') : $value;
+		return ($html_escape) ? esc($value) : $value;
 	}
 }
 
@@ -839,7 +857,7 @@ if (! function_exists('set_checkbox'))
 		}
 
 		// Unchecked checkbox and radio inputs are not even submitted by browsers ...
-		if (! empty($request->getPost()) || ! empty(old($field)))
+		if ((string) $input === '0' || ! empty($request->getPost()) || ! empty(old($field)))
 		{
 			return ($input === $value) ? ' checked="checked"' : '';
 		}
@@ -891,7 +909,7 @@ if (! function_exists('set_radio'))
 
 		// Unchecked checkbox and radio inputs are not even submitted by browsers ...
 		$result = '';
-		if (! empty($input = $request->getPost($field)) || ! empty($input = old($field)))
+		if ((string) $input === '0' || ! empty($input = $request->getPost($field)) || ! empty($input = old($field)))
 		{
 			$result = ($input === $value) ? ' checked="checked"' : '';
 		}
@@ -944,7 +962,7 @@ if (! function_exists('parse_form_attributes'))
 			{
 				if ($key === 'value')
 				{
-					$val = esc($val, 'html');
+					$val = esc($val);
 				}
 				elseif ($key === 'name' && ! strlen($default['name']))
 				{

@@ -75,16 +75,16 @@ class PagerRenderer
 	 * @var integer
 	 */
 	protected $total;
-		/**
-		 * Page count?
-		 *
-		 * @var integer
-		 */
+	/**
+	 * Page count?
+	 *
+	 * @var integer
+	 */
 	protected $pageCount;
 	/**
 	 * URI base for pagination links
 	 *
-	 * @var integer
+	 * @var \CodeIgniter\HTTP\URI
 	 */
 	protected $uri;
 	/**
@@ -96,7 +96,7 @@ class PagerRenderer
 	/**
 	 * Name of $_GET parameter
 	 *
-	 * @var integer
+	 * @var string
 	 */
 	protected $pageSelector;
 
@@ -343,4 +343,86 @@ class PagerRenderer
 	}
 
 	//--------------------------------------------------------------------
+
+	/**
+	 * Checks to see if there is a "previous" page before our "first" page.
+	 *
+	 * @return boolean
+	 */
+	public function hasPreviousPage(): bool
+	{
+		return $this->current > 1;
+	}
+
+	//--------------------------------------------------------------------
+
+	/**
+	 * Returns a URL to the "previous" page.
+	 *
+	 * You MUST call hasPreviousPage() first, or this value may be invalid.
+	 *
+	 * @return string|null
+	 */
+	public function getPreviousPage()
+	{
+		if (! $this->hasPreviousPage())
+		{
+			return null;
+		}
+
+		$uri = clone $this->uri;
+
+		if ($this->segment === 0)
+		{
+			$uri->addQuery($this->pageSelector, $this->current - 1);
+		}
+		else
+		{
+			$uri->setSegment($this->segment, $this->current - 1);
+		}
+
+		return (string) $uri;
+	}
+
+	//--------------------------------------------------------------------
+
+	/**
+	 * Checks to see if there is a "next" page after our "last" page.
+	 *
+	 * @return boolean
+	 */
+	public function hasNextPage(): bool
+	{
+		return $this->current < $this->last;
+	}
+
+	//--------------------------------------------------------------------
+
+	/**
+	 * Returns a URL to the "next" page.
+	 *
+	 * You MUST call hasNextPage() first, or this value may be invalid.
+	 *
+	 * @return string|null
+	 */
+	public function getNextPage()
+	{
+		if (! $this->hasNextPage())
+		{
+			return null;
+		}
+
+		$uri = clone $this->uri;
+
+		if ($this->segment === 0)
+		{
+			$uri->addQuery($this->pageSelector, $this->current + 1);
+		}
+		else
+		{
+			$uri->setSegment($this->segment, $this->current + 1);
+		}
+
+		return (string) $uri;
+	}
 }

@@ -67,8 +67,8 @@ class FileHandler implements CacheInterface
 	/**
 	 * Constructor.
 	 *
-	 * @param  type $config
-	 * @throws type
+	 * @param  \Config\Cache $config
+	 * @throws CacheException
 	 */
 	public function __construct($config)
 	{
@@ -148,13 +148,13 @@ class FileHandler implements CacheInterface
 	 *
 	 * @param string $key Cache item name
 	 *
-	 * @return mixed
+	 * @return boolean
 	 */
 	public function delete(string $key)
 	{
 		$key = $this->prefix . $key;
 
-		return is_file($this->path . $key) ? unlink($this->path . $key) : false;
+		return is_file($this->path . $key) && unlink($this->path . $key);
 	}
 
 	//--------------------------------------------------------------------
@@ -228,7 +228,7 @@ class FileHandler implements CacheInterface
 	/**
 	 * Will delete all items in the entire cache.
 	 *
-	 * @return mixed
+	 * @return boolean
 	 */
 	public function clean()
 	{
@@ -320,6 +320,7 @@ class FileHandler implements CacheInterface
 
 		$data = unserialize(file_get_contents($this->path . $key));
 
+		// @phpstan-ignore-next-line
 		if ($data['ttl'] > 0 && time() > $data['time'] + $data['ttl'])
 		{
 			// If the file is still there then remove it
@@ -342,8 +343,8 @@ class FileHandler implements CacheInterface
 	/**
 	 * Writes a file to disk, or returns false if not successful.
 	 *
-	 * @param $path
-	 * @param $data
+	 * @param string $path
+	 * @param string $data
 	 * @param string $mode
 	 *
 	 * @return boolean
@@ -528,7 +529,7 @@ class FileHandler implements CacheInterface
 			}
 		}
 
-		return $fileInfo;
+		return $fileInfo; // @phpstan-ignore-line
 	}
 
 	//--------------------------------------------------------------------

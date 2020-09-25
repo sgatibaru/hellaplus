@@ -37,19 +37,20 @@
  * @filesource
  */
 
-use Config\App;
-use Config\Logger;
-use Config\Database;
-use Config\Services;
-use CodeIgniter\HTTP\URI;
-use Laminas\Escaper\Escaper;
 use CodeIgniter\Config\Config;
-use CodeIgniter\Test\TestLogger;
+use CodeIgniter\Database\ConnectionInterface;
+use CodeIgniter\Files\Exceptions\FileNotFoundException;
 use CodeIgniter\HTTP\RedirectResponse;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use CodeIgniter\Database\ConnectionInterface;
-use CodeIgniter\Files\Exceptions\FileNotFoundException;
+use CodeIgniter\HTTP\URI;
+use CodeIgniter\Test\TestLogger;
+use Config\App;
+use Config\Database;
+use Config\Logger;
+use Config\Services;
+use Config\View;
+use Laminas\Escaper\Escaper;
 
 /**
  * Common Functions
@@ -108,6 +109,136 @@ if (! function_exists('cache'))
 
 		// Still here? Retrieve the value.
 		return $cache->get($key);
+	}
+}
+
+if (! function_exists('clean_path'))
+{
+	/**
+	 * A convenience method to clean paths for
+	 * a nicer looking output. Useful for exception
+	 * handling, error logging, etc.
+	 *
+	 * @param string $path
+	 *
+	 * @return string
+	 */
+	function clean_path(string $path): string
+	{
+		// Resolve relative paths
+		$path = realpath($path) ?: $path;
+
+		switch (true)
+		{
+			case strpos($path, APPPATH) === 0:
+				return 'APPPATH' . DIRECTORY_SEPARATOR . substr($path, strlen(APPPATH));
+			case strpos($path, SYSTEMPATH) === 0:
+				return 'SYSTEMPATH' . DIRECTORY_SEPARATOR . substr($path, strlen(SYSTEMPATH));
+			case strpos($path, FCPATH) === 0:
+				return 'FCPATH' . DIRECTORY_SEPARATOR . substr($path, strlen(FCPATH));
+			case defined('VENDORPATH') && strpos($path, VENDORPATH) === 0:
+				return 'VENDORPATH' . DIRECTORY_SEPARATOR . substr($path, strlen(VENDORPATH));
+			case strpos($path, ROOTPATH) === 0:
+				return 'ROOTPATH' . DIRECTORY_SEPARATOR . substr($path, strlen(ROOTPATH));
+			default:
+				return $path;
+		}
+	}
+}
+
+if (! function_exists('command'))
+{
+	/**
+	 * Runs a single command.
+	 * Input expected in a single string as would
+	 * be used on the command line itself:
+	 *
+	 *  > command('migrate:create SomeMigration');
+	 *
+	 * @param string $command
+	 *
+	 * @return false|string
+	 */
+	function command(string $command)
+	{
+		$runner      = service('commands');
+		$regexString = '([^\s]+?)(?:\s|(?<!\\\\)"|(?<!\\\\)\'|$)';
+		$regexQuoted = '(?:"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"|\'([^\'\\\\]*(?:\\\\.[^\'\\\\]*)*)\')';
+
+		$args   = [];
+		$length = strlen($command);
+		$cursor = 0;
+
+		/**
+		 * Adopted from Symfony's `StringInput::tokenize()` with few changes.
+		 *
+		 * @see https://github.com/symfony/symfony/blob/master/src/Symfony/Component/Console/Input/StringInput.php
+		 */
+		while ($cursor < $length)
+		{
+			if (preg_match('/\s+/A', $command, $match, 0, $cursor))
+			{
+				// nothing to do
+			}
+			elseif (preg_match('/' . $regexQuoted . '/A', $command, $match, 0, $cursor))
+			{
+				$args[] = stripcslashes(substr($match[0], 1, strlen($match[0]) - 2));
+			}
+			elseif (preg_match('/' . $regexString . '/A', $command, $match, 0, $cursor))
+			{
+				$args[] = stripcslashes($match[1]);
+			}
+			else
+			{
+				// @codeCoverageIgnoreStart
+				throw new InvalidArgumentException(sprintf('Unable to parse input near "... %s ...".', substr($command, $cursor, 10)));
+				// @codeCoverageIgnoreEnd
+			}
+
+			$cursor += strlen($match[0]);
+		}
+
+		$command     = array_shift($args);
+		$params      = [];
+		$optionValue = false;
+
+		foreach ($args as $i => $arg)
+		{
+			if (mb_strpos($arg, '-') !== 0)
+			{
+				if ($optionValue)
+				{
+					// if this was an option value, it was already
+					// included in the previous iteration
+					$optionValue = false;
+				}
+				else
+				{
+					// add to segments if not starting with '-'
+					// and not an option value
+					$params[] = $arg;
+				}
+
+				continue;
+			}
+
+			$arg   = ltrim($arg, '-');
+			$value = null;
+
+			if (isset($args[$i + 1]) && mb_strpos($args[$i + 1], '-') !== 0)
+			{
+				$value       = $args[$i + 1];
+				$optionValue = true;
+			}
+
+			$params[$arg] = $value;
+		}
+
+		ob_start();
+		$runner->run($command, $params);
+		$output = ob_get_clean();
+
+		return $output;
 	}
 }
 
@@ -246,9 +377,11 @@ if (! function_exists('dd'))
 	 */
 	function dd(...$vars)
 	{
+		// @codeCoverageIgnoreStart
 		Kint::$aliases[] = 'dd';
 		Kint::dump(...$vars);
 		exit;
+		// @codeCoverageIgnoreEnd
 	}
 }
 
@@ -260,18 +393,14 @@ if (! function_exists('env'))
 	 * retrieving values set from the .env file for
 	 * use in config files.
 	 *
-	 * @param string $key
-	 * @param null   $default
+	 * @param string      $key
+	 * @param string|null $default
 	 *
 	 * @return mixed
 	 */
 	function env(string $key, $default = null)
 	{
-		$value = getenv($key);
-		if ($value === false)
-		{
-			$value = $_ENV[$key] ?? $_SERVER[$key] ?? false;
-		}
+		$value = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
 
 		// Not found? Return the default value
 		if ($value === false)
@@ -319,7 +448,7 @@ if (! function_exists('esc'))
 	{
 		if (is_array($data))
 		{
-			foreach ($data as $key => &$value)
+			foreach ($data as &$value)
 			{
 				$value = esc($value, $context);
 			}
@@ -337,7 +466,7 @@ if (! function_exists('esc'))
 				return $data;
 			}
 
-			if (! in_array($context, ['html', 'js', 'css', 'url', 'attr']))
+			if (! in_array($context, ['html', 'js', 'css', 'url', 'attr'], true))
 			{
 				throw new InvalidArgumentException('Invalid escape context provided.');
 			}
@@ -384,10 +513,7 @@ if (! function_exists('force_https'))
 	 * @param RequestInterface  $request
 	 * @param ResponseInterface $response
 	 *
-	 * Not testable, as it will exit!
-	 *
-	 * @throws             \CodeIgniter\HTTP\Exceptions\HTTPException
-	 * @codeCoverageIgnore
+	 * @throws \CodeIgniter\HTTP\Exceptions\HTTPException
 	 */
 	function force_https(int $duration = 31536000, RequestInterface $request = null, ResponseInterface $response = null)
 	{
@@ -400,22 +526,30 @@ if (! function_exists('force_https'))
 			$response = Services::response(null, true);
 		}
 
-		if (is_cli() || $request->isSecure())
+		if ((ENVIRONMENT !== 'testing' && (is_cli() || $request->isSecure())) || (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'test'))
 		{
+			// @codeCoverageIgnoreStart
 			return;
+			// @codeCoverageIgnoreEnd
 		}
 
-		// If the session library is loaded, we should regenerate
+		// If the session status is active, we should regenerate
 		// the session ID for safety sake.
-		if (class_exists('Session', false))
+		if (ENVIRONMENT !== 'testing' && session_status() === PHP_SESSION_ACTIVE)
 		{
+			// @codeCoverageIgnoreStart
 			Services::session(null, true)
 				->regenerate();
+			// @codeCoverageIgnoreEnd
 		}
 
 		$baseURL = config(App::class)->baseURL;
 
-		if (strpos($baseURL, 'http://') === 0)
+		if (strpos($baseURL, 'https://') === 0)
+		{
+			$baseURL = (string) substr($baseURL, strlen('https://'));
+		}
+		elseif (strpos($baseURL, 'http://') === 0)
 		{
 			$baseURL = (string) substr($baseURL, strlen('http://'));
 		}
@@ -430,7 +564,12 @@ if (! function_exists('force_https'))
 		$response->redirect($uri);
 		$response->sendHeaders();
 
-		exit();
+		if (ENVIRONMENT !== 'testing')
+		{
+			// @codeCoverageIgnoreStart
+			exit();
+			// @codeCoverageIgnoreEnd
+		}
 	}
 }
 
@@ -646,7 +785,8 @@ if (! function_exists('is_really_writable'))
 
 			return true;
 		}
-		elseif (! is_file($file) || ( $fp = @fopen($file, 'ab')) === false)
+
+		if (! is_file($file) || ( $fp = @fopen($file, 'ab')) === false)
 		{
 			return false;
 		}
@@ -663,9 +803,9 @@ if (! function_exists('lang'))
 	 * A convenience method to translate a string or array of them and format
 	 * the result with the intl extension's MessageFormatter.
 	 *
-	 * @param string|[] $line
-	 * @param array     $args
-	 * @param string    $locale
+	 * @param string      $line
+	 * @param array       $args
+	 * @param string|null $locale
 	 *
 	 * @return string
 	 */
@@ -692,9 +832,9 @@ if (! function_exists('log_message'))
 	 *  - info
 	 *  - debug
 	 *
-	 * @param string     $level
-	 * @param string     $message
-	 * @param array|null $context
+	 * @param string $level
+	 * @param string $message
+	 * @param array  $context
 	 *
 	 * @return mixed
 	 */
@@ -856,7 +996,7 @@ if (! function_exists('route_to'))
 	 * have a route defined in the routes Config file.
 	 *
 	 * @param string $method
-	 * @param array  ...$params
+	 * @param mixed  ...$params
 	 *
 	 * @return false|string
 	 */
@@ -1066,8 +1206,9 @@ if (! function_exists('view'))
 		 */
 		$renderer = Services::renderer();
 
-		$saveData = true;
-		if (array_key_exists('saveData', $options) && $options['saveData'] === true)
+		$saveData = config(View::class)->saveData;
+
+		if (array_key_exists('saveData', $options))
 		{
 			$saveData = (bool) $options['saveData'];
 			unset($options['saveData']);

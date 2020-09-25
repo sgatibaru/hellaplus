@@ -38,12 +38,27 @@ $routes->get('/', '\App\Controllers\auth\Authe::index');
 $routes->group('auth', function ($routes) {
     $routes->add('/', '\App\Controllers\auth\Authe::login');
     $routes->add('login', '\App\Controllers\auth\Authe::login');
+
+    $routes->add('register', '\App\Controllers\auth\Authe::register', ['as' => 'auth.register']);
+
     $routes->add('forgot-password', '\App\Controllers\auth\Authe::forgot_password');
     $routes->add('reset-password/(:any)', '\App\Controllers\auth\Authe::reset_password/$1');
     $routes->add('activate/(:num)/(:any)', '\App\Controllers\auth\Authe::activate/$1/$2');
     //$routes->add('create', '\App\Controllers\auth\Authe::login');
     $routes->add('logout', '\App\Controllers\auth\Authe::logout', ['as' => 'auth.logout']);
 });
+
+$routes->group('dashboard', function ($routes) {
+    $routes->get('/', '\App\Controllers\Admin\Dashboard::index', ['as' => 'dashboard.index']);
+    $routes->add('settings', '\App\Controllers\Admin\Settings::index', ['as' => 'dashboard.settings']);
+
+    $routes->get('clients', '\App\Controllers\Admin\Clients::index', ['as' => 'dashboard.clients']);
+    $routes->get('clients/view/(:num)', '\App\Controllers\Admin\Clients::view/$1', ['as' => 'dashboard.clients.view']);
+
+    $routes->get('shortcodes', '\App\Controllers\Admin\Shortcodes::index', ['as' => 'dashboard.shortcodes']);
+    $routes->get('shortcodes/view/(:num)', '\App\Controllers\Admin\Shortcodes::view/$1', ['as' => 'dashboard.shortcodes.view']);
+});
+
 $routes->group('admin', function ($routes) {
     $routes->add('/', '\App\Controllers\Home::index', ['as' => 'admin.index']);
     $routes->post('api/setup/(:any)', '\App\Controllers\Api::setup/$1', ['as' => 'api.setup']);

@@ -139,16 +139,23 @@ class IonAuth
                 else
                 {
                     $message = view($this->config->emailTemplates . $this->config->emailForgotPassword, $data);
-                    $this->email->clear();
-                    $this->email->setFrom($this->config->adminEmail, $this->config->siteTitle);
-                    $this->email->setTo($user->email);
-                    $this->email->setSubject($this->config->siteTitle . ' - ' . lang('IonAuth.email_forgotten_password_subject'));
-                    $this->email->setMessage($message);
-                    if ($this->email->send())
-                    {
+                    $mailer = new Mailer();
+                    $mailer->clearAddresses();
+                    if($mailer->sendEmail(get_option('site_name', 'HellaPlus').' - Reset Password', $message, $user->email, $user->first_name)) {
                         $this->setMessage('IonAuth.forgot_password_successful');
                         return true;
                     }
+
+//                    $this->email->clear();
+//                    $this->email->setFrom($this->config->adminEmail, $this->config->siteTitle);
+//                    $this->email->setTo($user->email);
+//                    $this->email->setSubject($this->config->siteTitle . ' - ' . lang('IonAuth.email_forgotten_password_subject'));
+//                    $this->email->setMessage($message);
+//                    if ($this->email->send())
+//                    {
+//                        $this->setMessage('IonAuth.forgot_password_successful');
+//                        return true;
+//                    }
                 }
             }
         }
@@ -272,18 +279,25 @@ class IonAuth
             {
                 $message = view($this->config->emailTemplates . $this->config->emailActivate, $data);
 
-                $this->email->clear();
-                $this->email->setFrom($this->config->adminEmail, $this->config->siteTitle);
-                $this->email->setTo($email);
-                $this->email->setSubject($this->config->siteTitle . ' - ' . lang('IonAuth.emailActivation_subject'));
-                $this->email->setMessage($message);
-
-                if ($this->email->send() === true)
-                {
+                $mailer = new Mailer();
+                $mailer->clearAddresses();
+                if($mailer->sendEmail(get_option('site_name', 'HellaPlus').' - Activate Account', $message, $user->email, $user->first_name)) {
                     $this->ionAuthModel->triggerEvents(['post_account_creation', 'post_account_creation_successful', 'activation_email_successful']);
                     $this->setMessage('IonAuth.activation_email_successful');
                     return $id;
                 }
+//                $this->email->clear();
+//                $this->email->setFrom($this->config->adminEmail, $this->config->siteTitle);
+//                $this->email->setTo($email);
+//                $this->email->setSubject($this->config->siteTitle . ' - ' . lang('IonAuth.emailActivation_subject'));
+//                $this->email->setMessage($message);
+//
+//                if ($this->email->send() === true)
+//                {
+//                    $this->ionAuthModel->triggerEvents(['post_account_creation', 'post_account_creation_successful', 'activation_email_successful']);
+//                    $this->setMessage('IonAuth.activation_email_successful');
+//                    return $id;
+//                }
             }
 
             $this->ionAuthModel->triggerEvents(['post_account_creation', 'post_account_creation_unsuccessful', 'activation_email_unsuccessful']);

@@ -122,9 +122,9 @@ interface ConnectionInterface
 	/**
 	 * Returns the last error encountered by this connection.
 	 *
-	 * @return mixed
+	 * @return array
 	 */
-	public function getError();
+	public function error(): array;
 
 	//--------------------------------------------------------------------
 

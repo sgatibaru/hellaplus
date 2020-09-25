@@ -1,7 +1,7 @@
 <?php
 
 /**
- * CLI language strings.
+ * Entity language strings.
  *
  * @package    CodeIgniter
  * @author     CodeIgniter Dev Team
@@ -13,7 +13,6 @@
  * @codeCoverageIgnore
  */
 
-return
-[
+return [
    'tryingToAccessNonExistentProperty' => 'Trying to access non existent property {0} of {1}',
 ];

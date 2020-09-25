@@ -40,8 +40,8 @@ namespace CodeIgniter\View;
 
 use CodeIgniter\Cache\CacheInterface;
 use CodeIgniter\View\Exceptions\ViewException;
-use ReflectionMethod;
 use Config\Services;
+use ReflectionMethod;
 
 /**
  * Class Cell
@@ -110,7 +110,9 @@ class Cell
 		list($class, $method) = $this->determineClass($library);
 
 		// Is it cached?
-		$cacheName = ! empty($cacheName) ? $cacheName : $class . $method . md5(serialize($params));
+		$cacheName = ! empty($cacheName)
+			? $cacheName
+			: str_replace(['\\', '/'], '', $class) . $method . md5(serialize($params));
 
 		if (! empty($this->cache) && $output = $this->cache->get($cacheName))
 		{
@@ -192,7 +194,7 @@ class Cell
 	 * If a string, it should be in the format "key1=value key2=value".
 	 * It will be split and returned as an array.
 	 *
-	 * @param $params
+	 * @param mixed $params
 	 *
 	 * @return array|null
 	 */

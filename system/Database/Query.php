@@ -80,7 +80,7 @@ class Query implements QueryInterface
 	 * The start time in seconds with microseconds
 	 * for when this query was executed.
 	 *
-	 * @var float
+	 * @var string|float
 	 */
 	protected $startTime;
 
@@ -110,7 +110,7 @@ class Query implements QueryInterface
 	 * Pointer to database connection.
 	 * Mainly for escaping features.
 	 *
-	 * @var BaseConnection
+	 * @var ConnectionInterface
 	 */
 	public $db;
 
@@ -119,9 +119,9 @@ class Query implements QueryInterface
 	/**
 	 * BaseQuery constructor.
 	 *
-	 * @param $db ConnectionInterface
+	 * @param ConnectionInterface $db
 	 */
-	public function __construct(&$db)
+	public function __construct(ConnectionInterface &$db)
 	{
 		$this->db = $db;
 	}
@@ -168,12 +168,23 @@ class Query implements QueryInterface
 	/**
 	 * Will store the variables to bind into the query later.
 	 *
-	 * @param array $binds
+	 * @param array   $binds
+	 * @param boolean $setEscape
 	 *
 	 * @return $this
 	 */
-	public function setBinds(array $binds)
+	public function setBinds(array $binds, bool $setEscape = true)
 	{
+		if ($setEscape)
+		{
+			array_walk($binds, function (&$item) {
+				$item = [
+					$item,
+					true,
+				];
+			});
+		}
+
 		$this->binds = $binds;
 
 		return $this;
@@ -233,9 +244,9 @@ class Query implements QueryInterface
 	 * @param boolean $returnRaw
 	 * @param integer $decimals
 	 *
-	 * @return string
+	 * @return string|float
 	 */
-	public function getStartTime(bool $returnRaw = false, int $decimals = 6): string
+	public function getStartTime(bool $returnRaw = false, int $decimals = 6)
 	{
 		if ($returnRaw)
 		{
@@ -368,7 +379,7 @@ class Query implements QueryInterface
 	{
 		$sql = $this->finalQueryString;
 
-		$hasNamedBinds = strpos($sql, ':') !== false;
+		$hasNamedBinds = strpos($sql, ':') !== false && strpos($sql, ':=') === false;
 
 		if (empty($this->binds) || empty($this->bindMarker) ||
 				(strpos($sql, $this->bindMarker) === false &&
@@ -440,9 +451,7 @@ class Query implements QueryInterface
 			$replacers[":{$placeholder}:"] = $escapedValue;
 		}
 
-		$sql = strtr($sql, $replacers);
-
-		return $sql;
+		return strtr($sql, $replacers);
 	}
 
 	//--------------------------------------------------------------------

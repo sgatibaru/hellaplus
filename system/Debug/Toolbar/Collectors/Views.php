@@ -39,8 +39,8 @@
 
 namespace CodeIgniter\Debug\Toolbar\Collectors;
 
-use Config\Services;
 use CodeIgniter\View\RendererInterface;
+use Config\Services;
 
 /**
  * Views collector
@@ -124,9 +124,9 @@ class Views extends BaseCollector
 	{
 		$data = [];
 
-		$rows = $this->viewer->getPerformanceData();
+		$rows = $this->viewer->getPerformanceData(); // @phpstan-ignore-line
 
-		foreach ($rows as $name => $info)
+		foreach ($rows as $info)
 		{
 			$data[] = [
 				'name'      => 'View: ' . $info['view'],
@@ -162,6 +162,7 @@ class Views extends BaseCollector
 	public function getVarData(): array
 	{
 		return [
+			// @phpstan-ignore-next-line
 			'View Data' => $this->viewer->getData(),
 		];
 	}
@@ -175,7 +176,7 @@ class Views extends BaseCollector
 	 */
 	public function getBadgeValue(): int
 	{
-		return count($this->viewer->getPerformanceData());
+		return count($this->viewer->getPerformanceData()); // @phpstan-ignore-line
 	}
 
 	/**

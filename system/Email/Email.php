@@ -39,6 +39,7 @@
 
 namespace CodeIgniter\Email;
 
+use CodeIgniter\Events\Events;
 use Config\Mimes;
 
 /**
@@ -54,6 +55,18 @@ use Config\Mimes;
  */
 class Email
 {
+	/**
+	 * Properties from the last successful send.
+	 *
+	 * @var array|null
+	 */
+	public $archive;
+	/**
+	 * Properties to be added to the next archive.
+	 *
+	 * @var array
+	 */
+	protected $tmpArchive = [];
 	/**
 	 * @var string
 	 */
@@ -209,7 +222,7 @@ class Email
 	 * BCC Batch max number size.
 	 *
 	 * @see Email::$BCCBatchMode
-	 * @var integer
+	 * @var integer|string
 	 */
 	public $BCCBatchSize = 200;
 	//--------------------------------------------------------------------
@@ -240,9 +253,9 @@ class Email
 	/**
 	 * SMTP Connection socket placeholder
 	 *
-	 * @var resource
+	 * @var resource|null
 	 */
-	protected $SMTPConnect = '';
+	protected $SMTPConnect;
 	/**
 	 * Mail encoding
 	 *
@@ -271,7 +284,7 @@ class Email
 	/**
 	 * Recipients
 	 *
-	 * @var array
+	 * @var array|string
 	 */
 	protected $recipients = [];
 	/**
@@ -451,6 +464,11 @@ class Email
 				$this->validateEmail($this->stringToArray($returnPath));
 			}
 		}
+
+		// Store the plain text values
+		$this->tmpArchive['fromEmail'] = $from;
+		$this->tmpArchive['fromName']  = $name;
+
 		// prepare the display name
 		if ($name !== '')
 		{
@@ -468,6 +486,8 @@ class Email
 		$this->setHeader('From', $name . ' <' . $from . '>');
 		isset($returnPath) || $returnPath = $from;
 		$this->setHeader('Return-Path', '<' . $returnPath . '>');
+		$this->tmpArchive['returnPath'] = $returnPath;
+
 		return $this;
 	}
 	//--------------------------------------------------------------------
@@ -491,6 +511,8 @@ class Email
 		}
 		if ($name !== '')
 		{
+			$this->tmpArchive['replyName'] = $name;
+
 			// only use Q encoding if there are characters that would require it
 			if (! preg_match('/[\200-\377]/', $name))
 			{
@@ -503,7 +525,9 @@ class Email
 			}
 		}
 		$this->setHeader('Reply-To', $name . ' <' . $replyto . '>');
-		$this->replyToFlag = true;
+		$this->replyToFlag           = true;
+		$this->tmpArchive['replyTo'] = $replyto;
+
 		return $this;
 	}
 	//--------------------------------------------------------------------
@@ -549,6 +573,7 @@ class Email
 		{
 			$this->CCArray = $cc;
 		}
+		$this->tmpArchive['CCArray'] = $cc;
 		return $this;
 	}
 	//--------------------------------------------------------------------
@@ -579,6 +604,7 @@ class Email
 		else
 		{
 			$this->setHeader('Bcc', implode(', ', $bcc));
+			$this->tmpArchive['BCCArray'] = $bcc;
 		}
 		return $this;
 	}
@@ -592,6 +618,8 @@ class Email
 	 */
 	public function setSubject($subject)
 	{
+		$this->tmpArchive['subject'] = $subject;
+
 		$subject = $this->prepQEncoding($subject);
 		$this->setHeader('Subject', $subject);
 		return $this;
@@ -618,7 +646,7 @@ class Email
 	 * @param string|null $newname
 	 * @param string      $mime
 	 *
-	 * @return Email
+	 * @return Email|boolean
 	 */
 	public function attach($file, $disposition = '', $newname = null, $mime = '')
 	{
@@ -665,7 +693,7 @@ class Email
 	 *
 	 * @param string $filename
 	 *
-	 * @return string
+	 * @return string|boolean
 	 */
 	public function setAttachmentCID($filename)
 	{
@@ -772,7 +800,7 @@ class Email
 	 */
 	public function setPriority($n = 3)
 	{
-		$this->priority = preg_match('/^[1-5]$/', $n) ? (int) $n : 3;
+		$this->priority = preg_match('/^[1-5]$/', (string) $n) ? (int) $n : 3;
 		return $this;
 	}
 	//--------------------------------------------------------------------
@@ -785,7 +813,7 @@ class Email
 	 */
 	public function setNewline($newline = "\n")
 	{
-		$this->newline = in_array($newline, ["\n", "\r\n", "\r"]) ? $newline : "\n";
+		$this->newline = in_array($newline, ["\n", "\r\n", "\r"], true) ? $newline : "\n";
 		return $this;
 	}
 	//--------------------------------------------------------------------
@@ -821,7 +849,7 @@ class Email
 	protected function getProtocol()
 	{
 		$this->protocol                                                      = strtolower($this->protocol);
-		in_array($this->protocol, $this->protocols, true) || $this->protocol = 'mail';
+		in_array($this->protocol, $this->protocols, true) || $this->protocol = 'mail'; // @phpstan-ignore-line
 		return $this->protocol;
 	}
 	//--------------------------------------------------------------------
@@ -832,7 +860,7 @@ class Email
 	 */
 	protected function getEncoding()
 	{
-		in_array($this->encoding, $this->bitDepths) || $this->encoding = '8bit';
+		in_array($this->encoding, $this->bitDepths, true) || $this->encoding = '8bit'; // @phpstan-ignore-line
 		foreach ($this->baseCharsets as $charset)
 		{
 			if (strpos($this->charset, $charset) === 0)
@@ -855,7 +883,8 @@ class Email
 		{
 			return empty($this->attachments) ? 'html' : 'html-attach';
 		}
-		elseif ($this->mailType === 'text' && ! empty($this->attachments))
+
+		if ($this->mailType === 'text' && ! empty($this->attachments))
 		{
 			return 'plain-attach';
 		}
@@ -935,9 +964,9 @@ class Email
 	/**
 	 * Clean Extended Email Address: Joe Smith <joe@smith.com>
 	 *
-	 * @param string $email
+	 * @param string|array $email
 	 *
-	 * @return string
+	 * @return array|string
 	 */
 	public function cleanEmail($email)
 	{
@@ -1159,7 +1188,7 @@ class Email
 				}
 				if ($this->sendMultipart !== false)
 				{
-					$this->finalBody .= '--' . $boundary . '--';
+					$this->finalBody .= '--' . $boundary . '--'; // @phpstan-ignore-line
 				}
 			return;
 			case 'plain-attach':
@@ -1249,11 +1278,11 @@ class Email
 	/**
 	 * Prepares attachment string
 	 *
-	 * @param string      &$body     Message body to append to
+	 * @param string      $body      Message body to append to
 	 * @param string      $boundary  Multipart boundary
 	 * @param string|null $multipart When provided, only attachments of this type will be processed
 	 *
-	 * @return string
+	 * @return void
 	 */
 	protected function appendAttachments(&$body, $boundary, $multipart = null)
 	{
@@ -1487,7 +1516,7 @@ class Email
 		// We might already have this set for UTF-8
 		isset($chars) || $chars = static::strlen($str);
 		$output                 = '=?' . $this->charset . '?Q?';
-		for ($i = 0, $length = static::strlen($output); $i < $chars; $i ++)
+		for ($i = 0, $length = static::strlen($output); $i < $chars; $i ++) // @phpstan-ignore-line
 		{
 			$chr = ($this->charset === 'UTF-8' && extension_loaded('iconv')) ? '=' . implode('=', str_split(strtoupper(bin2hex(iconv_substr($str, $i, 1, $this->charset))), 2)) : '=' . strtoupper(bin2hex($str[$i]));
 			// RFC 2045 sets a limit of 76 characters per line.
@@ -1530,8 +1559,7 @@ class Email
 		{
 			$this->setReplyTo($this->headers['From']);
 		}
-		if (empty($this->recipients) && ! isset($this->headers['To']) && empty($this->BCCArray) && ! isset($this->headers['Bcc']) && ! isset($this->headers['Cc'])
-		)
+		if (empty($this->recipients) && ! isset($this->headers['To']) && empty($this->BCCArray) && ! isset($this->headers['Bcc']) && ! isset($this->headers['Cc']))
 		{
 			$this->setErrorMessage(lang('Email.noRecipients'));
 			return false;
@@ -1548,10 +1576,18 @@ class Email
 		}
 		$this->buildMessage();
 		$result = $this->spoolEmail();
-		if ($result && $autoClear)
+		if ($result)
 		{
-			$this->clear();
+			$this->setArchiveValues();
+
+			if ($autoClear)
+			{
+				$this->clear();
+			}
+
+			Events::trigger('email', $this->archive);
 		}
+
 		return $result;
 	}
 	//--------------------------------------------------------------------
@@ -1595,6 +1631,10 @@ class Email
 			$this->buildMessage();
 			$this->spoolEmail();
 		}
+
+		// Update the archive
+		$this->setArchiveValues();
+		Events::trigger('email', $this->archive);
 	}
 	//--------------------------------------------------------------------
 	/**
@@ -1666,7 +1706,7 @@ class Email
 	 *
 	 * Credits for the base concept go to Paul Buonopane <paul@namepros.com>
 	 *
-	 * @param string &$email
+	 * @param string $email
 	 *
 	 * @return boolean
 	 */
@@ -1688,20 +1728,18 @@ class Email
 	 */
 	protected function sendWithMail()
 	{
-		if (is_array($this->recipients))
-		{
-			$this->recipients = implode(', ', $this->recipients);
-		}
+		$recipients = is_array($this->recipients) ? implode(', ', $this->recipients) : $this->recipients;
+
 		// _validate_email_for_shell() below accepts by reference,
 		// so this needs to be assigned to a variable
 		$from = $this->cleanEmail($this->headers['Return-Path']);
 		if (! $this->validateEmailForShell($from))
 		{
-			return mail($this->recipients, $this->subject, $this->finalBody, $this->headerStr);
+			return mail($recipients, $this->subject, $this->finalBody, $this->headerStr);
 		}
 		// most documentation of sendmail using the "-f" flag lacks a space after it, however
 		// we've encountered servers that seem to require it to be in place.
-		return mail($this->recipients, $this->subject, $this->finalBody, $this->headerStr, '-f ' . $from);
+		return mail($recipients, $this->subject, $this->finalBody, $this->headerStr, '-f ' . $from);
 	}
 	//--------------------------------------------------------------------
 	/**
@@ -1817,7 +1855,7 @@ class Email
 	/**
 	 * SMTP Connect
 	 *
-	 * @return string
+	 * @return string|boolean
 	 */
 	protected function SMTPConnect()
 	{
@@ -1825,7 +1863,17 @@ class Email
 		{
 			return true;
 		}
-		$ssl               = ($this->SMTPCrypto === 'ssl') ? 'ssl://' : '';
+
+		$ssl = '';
+		if ($this->SMTPPort === 465)
+		{
+			$ssl = 'tls://';
+		}
+		elseif ($this->SMTPCrypto === 'ssl')
+		{
+			$ssl = 'ssl://';
+		}
+
 		$this->SMTPConnect = fsockopen(
 				$ssl . $this->SMTPHost, $this->SMTPPort, $errno, $errstr, $this->SMTPTimeout
 		);
@@ -1840,10 +1888,11 @@ class Email
 		{
 			$this->sendCommand('hello');
 			$this->sendCommand('starttls');
-			$crypto = stream_socket_enable_crypto($this->SMTPConnect, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+			$crypto = stream_socket_enable_crypto($this->SMTPConnect, true, STREAM_CRYPTO_METHOD_TLSv1_0_CLIENT |
+				STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT);
 			if ($crypto !== true)
 			{
-				$this->setErrorMessage(lang('Email.SMTPError', $this->getSMTPData()));
+				$this->setErrorMessage(lang('Email.SMTPError', [$this->getSMTPData()]));
 				return false;
 			}
 		}
@@ -1907,7 +1956,7 @@ class Email
 		}
 		$reply                = $this->getSMTPData();
 		$this->debugMessage[] = '<pre>' . $cmd . ': ' . $reply . '</pre>';
-		if ((int) static::substr($reply, 0, 3) !== $resp)
+		if ((int) static::substr($reply, 0, 3) !== $resp) // @phpstan-ignore-line
 		{
 			$this->setErrorMessage(lang('Email.SMTPError', [$reply]));
 			return false;
@@ -1941,7 +1990,8 @@ class Email
 		{
 			return true;
 		}
-		elseif (strpos($reply, '334') !== 0)
+
+		if (strpos($reply, '334') !== 0)
 		{
 			$this->setErrorMessage(lang('Email.failedSMTPLogin', [$reply]));
 			return false;
@@ -2003,9 +2053,9 @@ class Email
 				$timestamp = 0;
 			}
 		}
-		if ($result === false)
+		if ($result === false) // @phpstan-ignore-line
 		{
-			$this->setErrorMessage(lang('Email.SMTPDataFailure', $data));
+			$this->setErrorMessage(lang('Email.SMTPDataFailure', [$data]));
 			return false;
 		}
 		return true;
@@ -2064,7 +2114,7 @@ class Email
 		$msg = implode('', $this->debugMessage);
 		// Determine which parts of our raw data needs to be printed
 		$raw_data                                         = '';
-		is_array($include) || $include                    = [$include];
+		is_array($include) || $include                    = [$include]; // @phpstan-ignore-line
 		in_array('headers', $include, true) && $raw_data  = htmlspecialchars($this->headerStr) . "\n";
 		in_array('subject', $include, true) && $raw_data .= htmlspecialchars($this->subject) . "\n";
 		in_array('body', $include, true) && $raw_data    .= htmlspecialchars($this->finalBody);
@@ -2130,5 +2180,22 @@ class Email
 			return mb_substr($str, $start, $length, '8bit');
 		}
 		return isset($length) ? substr($str, $start, $length) : substr($str, $start);
+	}
+	//--------------------------------------------------------------------
+	/**
+	 * Determines the values that should be stored in $archive.
+	 *
+	 * @return array The updated archive values
+	 */
+	protected function setArchiveValues(): array
+	{
+		// Get property values and add anything prepped in tmpArchive
+		$this->archive = array_merge(get_object_vars($this), $this->tmpArchive);
+		unset($this->archive['archive']);
+
+		// Clear tmpArchive for next run
+		$this->tmpArchive = [];
+
+		return $this->archive;
 	}
 }

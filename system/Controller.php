@@ -39,11 +39,11 @@
 
 namespace CodeIgniter;
 
-use Config\Services;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use CodeIgniter\Validation\Validation;
 use CodeIgniter\Validation\Exceptions\ValidationException;
+use CodeIgniter\Validation\Validation;
+use Config\Services;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -67,21 +67,21 @@ class Controller
 	/**
 	 * Instance of the main Request object.
 	 *
-	 * @var HTTP\IncomingRequest
+	 * @var RequestInterface
 	 */
 	protected $request;
 
 	/**
 	 * Instance of the main response object.
 	 *
-	 * @var HTTP\Response
+	 * @var ResponseInterface
 	 */
 	protected $response;
 
 	/**
 	 * Instance of logger to use.
 	 *
-	 * @var Log\Logger
+	 * @var LoggerInterface
 	 */
 	protected $logger;
 
@@ -194,7 +194,7 @@ class Controller
 		// If you replace the $rules array with the name of the group
 		if (is_string($rules))
 		{
-			$validation = new \Config\Validation();
+			$validation = config('Validation');
 
 			// If the rule wasn't found in the \Config\Validation, we
 			// should throw an exception so the developer can find it.
@@ -213,12 +213,10 @@ class Controller
 			$rules = $validation->$rules;
 		}
 
-		$success = $this->validator
+		return $this->validator
 			->withRequest($this->request)
 			->setRules($rules, $messages)
 			->run();
-
-		return $success;
 	}
 
 	//--------------------------------------------------------------------

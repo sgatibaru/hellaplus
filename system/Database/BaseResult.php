@@ -39,6 +39,8 @@
 
 namespace CodeIgniter\Database;
 
+use CodeIgniter\Entity;
+
 /**
  * Class BaseResult
  */
@@ -55,7 +57,7 @@ abstract class BaseResult implements ResultInterface
 	/**
 	 * Result ID
 	 *
-	 * @var resource|object
+	 * @var resource|object|boolean
 	 */
 	public $resultID;
 
@@ -76,7 +78,7 @@ abstract class BaseResult implements ResultInterface
 	/**
 	 * Custom Result Object
 	 *
-	 * @var object[]
+	 * @var array
 	 */
 	public $customResultObject = [];
 
@@ -97,7 +99,7 @@ abstract class BaseResult implements ResultInterface
 	/**
 	 * Row data
 	 *
-	 * @var array
+	 * @var array|null
 	 */
 	public $rowData;
 
@@ -132,7 +134,8 @@ abstract class BaseResult implements ResultInterface
 		{
 			return $this->getResultArray();
 		}
-		elseif ($type === 'object')
+
+		if ($type === 'object')
 		{
 			return $this->getResultObject();
 		}
@@ -165,11 +168,11 @@ abstract class BaseResult implements ResultInterface
 		$_data = null;
 		if (($c = count($this->resultArray)) > 0)
 		{
-			$_data = 'result_array';
+			$_data = 'resultArray';
 		}
 		elseif (($c = count($this->resultObject)) > 0)
 		{
-			$_data = 'result_object';
+			$_data = 'resultObject';
 		}
 
 		if ($_data !== null)
@@ -187,12 +190,12 @@ abstract class BaseResult implements ResultInterface
 			return $this->customResultObject[$className];
 		}
 
-		is_null($this->rowData) || $this->dataSeek(0);
+		is_null($this->rowData) || $this->dataSeek();
 		$this->customResultObject[$className] = [];
 
 		while ($row = $this->fetchObject($className))
 		{
-			if (method_exists($row, 'syncOriginal'))
+			if (! is_subclass_of($row, Entity::class) && method_exists($row, 'syncOriginal'))
 			{
 				$row->syncOriginal();
 			}
@@ -200,6 +203,7 @@ abstract class BaseResult implements ResultInterface
 			$this->customResultObject[$className][] = $row;
 		}
 
+		// @phpstan-ignore-next-line
 		return $this->customResultObject[$className];
 	}
 
@@ -237,7 +241,7 @@ abstract class BaseResult implements ResultInterface
 			return $this->resultArray;
 		}
 
-		is_null($this->rowData) || $this->dataSeek(0);
+		is_null($this->rowData) || $this->dataSeek();
 		while ($row = $this->fetchAssoc())
 		{
 			$this->resultArray[] = $row;
@@ -280,10 +284,10 @@ abstract class BaseResult implements ResultInterface
 			return $this->resultObject;
 		}
 
-		is_null($this->rowData) || $this->dataSeek(0);
+		is_null($this->rowData) || $this->dataSeek();
 		while ($row = $this->fetchObject())
 		{
-			if (method_exists($row, 'syncOriginal'))
+			if (! is_subclass_of($row, Entity::class) && method_exists($row, 'syncOriginal'))
 			{
 				$row->syncOriginal();
 			}
@@ -291,6 +295,7 @@ abstract class BaseResult implements ResultInterface
 			$this->resultObject[] = $row;
 		}
 
+		// @phpstan-ignore-next-line
 		return $this->resultObject;
 	}
 
@@ -312,7 +317,7 @@ abstract class BaseResult implements ResultInterface
 		if (! is_numeric($n))
 		{
 			// We cache the row data for subsequent uses
-			is_array($this->rowData) || $this->rowData = $this->getRowArray(0);
+			is_array($this->rowData) || $this->rowData = $this->getRowArray();
 
 			// array_key_exists() instead of isset() to allow for NULL values
 			if (empty($this->rowData) || ! array_key_exists($n, $this->rowData))
@@ -327,7 +332,8 @@ abstract class BaseResult implements ResultInterface
 		{
 			return $this->getRowObject($n);
 		}
-		elseif ($type === 'array')
+
+		if ($type === 'array')
 		{
 			return $this->getRowArray($n);
 		}
@@ -433,7 +439,7 @@ abstract class BaseResult implements ResultInterface
 		// We cache the row data for subsequent uses
 		if (! is_array($this->rowData))
 		{
-			$this->rowData = $this->getRowArray(0);
+			$this->rowData = $this->getRowArray();
 		}
 
 		if (is_array($key))
@@ -544,7 +550,8 @@ abstract class BaseResult implements ResultInterface
 		{
 			return $this->fetchAssoc();
 		}
-		elseif ($type === 'object')
+
+		if ($type === 'object')
 		{
 			return $this->fetchObject();
 		}

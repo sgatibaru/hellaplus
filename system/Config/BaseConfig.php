@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * CodeIgniter
  *
@@ -70,7 +69,7 @@ class BaseConfig
 	/**
 	 * The modules configuration.
 	 *
-	 * @var type
+	 * @var \Config\Modules
 	 */
 	protected static $moduleConfig;
 
@@ -92,6 +91,20 @@ class BaseConfig
 		foreach ($properties as $property)
 		{
 			$this->initEnvValue($this->$property, $property, $prefix, $shortPrefix);
+
+			if ($shortPrefix === 'encryption' && $property === 'key')
+			{
+				// Handle hex2bin prefix
+				if (strpos($this->$property, 'hex2bin:') === 0)
+				{
+					$this->$property = hex2bin(substr($this->$property, 8));
+				}
+				// Handle base64 prefix
+				elseif (strpos($this->$property, 'base64:') === 0)
+				{
+					$this->$property = base64_decode(substr($this->$property, 7), true);
+				}
+			}
 		}
 
 		if (defined('ENVIRONMENT') && ENVIRONMENT !== 'testing')
@@ -108,7 +121,7 @@ class BaseConfig
 	/**
 	 * Initialization an environment-specific configuration setting
 	 *
-	 * @param mixed  &$property
+	 * @param mixed  $property
 	 * @param string $name
 	 * @param string $prefix
 	 * @param string $shortPrefix
@@ -164,16 +177,12 @@ class BaseConfig
 		{
 			case array_key_exists("{$shortPrefix}.{$property}", $_ENV):
 				return $_ENV["{$shortPrefix}.{$property}"];
-				break;
 			case array_key_exists("{$shortPrefix}.{$property}", $_SERVER):
 				return $_SERVER["{$shortPrefix}.{$property}"];
-				break;
 			case array_key_exists("{$prefix}.{$property}", $_ENV):
 				return $_ENV["{$prefix}.{$property}"];
-				break;
 			case array_key_exists("{$prefix}.{$property}", $_SERVER):
 				return $_SERVER["{$prefix}.{$property}"];
-				break;
 			default:
 				$value = getenv($property);
 				return $value === false ? null : $value;
@@ -217,7 +226,9 @@ class BaseConfig
 			// ignore non-applicable registrars
 			if (! method_exists($callable, $shortName))
 			{
+				// @codeCoverageIgnoreStart
 				continue;
+				// @codeCoverageIgnoreEnd
 			}
 
 			$properties = $callable::$shortName();

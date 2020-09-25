@@ -57,7 +57,7 @@ class ComposerScripts
 	/**
 	 * Base path to use.
 	 *
-	 * @var type
+	 * @var string
 	 */
 	protected static $basePath = 'ThirdParty/';
 
@@ -90,7 +90,9 @@ class ComposerScripts
 
 		if (empty($source))
 		{
+			// @codeCoverageIgnoreStart
 			die('Cannot move file. Source path invalid.');
+			// @codeCoverageIgnoreEnd
 		}
 
 		if (! is_file($source))
@@ -123,7 +125,7 @@ class ComposerScripts
 	/**
 	 * A recursive remove directory method.
 	 *
-	 * @param $dir
+	 * @param string $dir
 	 */
 	protected static function removeDir($dir)
 	{
@@ -203,7 +205,9 @@ class ComposerScripts
 			{
 				if (! static::moveFile($source, $dest))
 				{
+					// @codeCoverageIgnoreStart
 					die('Error moving: ' . $source);
+					// @codeCoverageIgnoreEnd
 				}
 			}
 		}

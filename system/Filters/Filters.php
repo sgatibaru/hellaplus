@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CodeIgniter
  *
@@ -38,10 +39,11 @@
 
 namespace CodeIgniter\Filters;
 
-use CodeIgniter\Config\BaseConfig;
+use CodeIgniter\Filters\Exceptions\FilterException;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use CodeIgniter\Filters\Exceptions\FilterException;
+use Config\Services;
+use Config\Modules;
 
 /**
  * Filters
@@ -61,9 +63,27 @@ class Filters
 	];
 
 	/**
+	 * The collection of filters' class names that will
+	 * be used to execute in each position.
+	 *
+	 * @var array
+	 */
+	protected $filtersClass = [
+		'before' => [],
+		'after'  => [],
+	];
+
+	/**
+	 * Any arguments to be passed to filtersClass.
+	 *
+	 * @var array
+	 */
+	protected $argumentsClass = [];
+
+	/**
 	 * The original config file
 	 *
-	 * @var BaseConfig
+	 * @var \Config\Filters
 	 */
 	protected $config;
 
@@ -96,20 +116,59 @@ class Filters
 	 */
 	protected $arguments = [];
 
-	//--------------------------------------------------------------------
+	/**
+	 * Handle to the modules config.
+	 *
+	 * @var \Config\Modules
+	 */
+	protected $modules;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param type              $config
-	 * @param RequestInterface  $request
-	 * @param ResponseInterface $response
+	 * @param \Config\Filters      $config
+	 * @param RequestInterface     $request
+	 * @param ResponseInterface    $response
+	 * @param \Config\Modules|null $modules
 	 */
-	public function __construct($config, RequestInterface $request, ResponseInterface $response)
+	public function __construct($config, RequestInterface $request, ResponseInterface $response, Modules $modules = null)
 	{
 		$this->config  = $config;
-		$this->request = & $request;
+		$this->request = &$request;
 		$this->setResponse($response);
+
+		$this->modules = $modules ?? config('Modules');
+	}
+
+	/**
+	 * If discoverFilters is enabled in Config then system will try to
+	 * auto-discover custom filters files in Namespaces and allow access to
+	 * the config object via the variable $customfilters as with the routes file
+	 *
+	 * Sample :
+	 * $filters->aliases['custom-auth'] = \Acme\Blob\Filters\BlobAuth::class;
+	 */
+	private function discoverFilters()
+	{
+		$locator = Services::locator();
+
+		// for access by custom filters
+		$filters = $this->config;
+
+		$files = $locator->search('Config/Filters.php');
+
+		foreach ($files as $file)
+		{
+			$className = $locator->getClassname($file);
+
+			// Don't include our main Filter config again...
+			if ($className === 'Config\\Filters')
+			{
+				continue;
+			}
+
+			include $file;
+		}
 	}
 
 	/**
@@ -119,10 +178,8 @@ class Filters
 	 */
 	public function setResponse(ResponseInterface $response)
 	{
-		$this->response = & $response;
+		$this->response = &$response;
 	}
-
-	//--------------------------------------------------------------------
 
 	/**
 	 * Runs through all of the filters for the specified
@@ -138,19 +195,9 @@ class Filters
 	{
 		$this->initialize(strtolower($uri));
 
-		foreach ($this->filters[$position] as $alias => $rules)
+		foreach ($this->filtersClass[$position] as $className)
 		{
-			if (is_numeric($alias) && is_string($rules))
-			{
-				$alias = $rules;
-			}
-
-			if (! array_key_exists($alias, $this->config->aliases))
-			{
-				throw FilterException::forNoAlias($alias);
-			}
-
-			$class = new $this->config->aliases[$alias]();
+			$class = new $className();
 
 			if (! $class instanceof FilterInterface)
 			{
@@ -159,7 +206,7 @@ class Filters
 
 			if ($position === 'before')
 			{
-				$result = $class->before($this->request, $this->arguments[$alias] ?? null);
+				$result = $class->before($this->request, $this->argumentsClass[$className] ?? null);
 
 				if ($result instanceof RequestInterface)
 				{
@@ -174,7 +221,6 @@ class Filters
 					// short circuit - bypass any other filters
 					return $result;
 				}
-
 				// Ignore an empty result
 				if (empty($result))
 				{
@@ -183,13 +229,15 @@ class Filters
 
 				return $result;
 			}
-			elseif ($position === 'after')
+
+			if ($position === 'after')
 			{
-				$result = $class->after($this->request, $this->response);
+				$result = $class->after($this->request, $this->response, $this->argumentsClass[$className] ?? null);
 
 				if ($result instanceof ResponseInterface)
 				{
 					$this->response = $result;
+
 					continue;
 				}
 			}
@@ -197,8 +245,6 @@ class Filters
 
 		return $position === 'before' ? $this->request : $this->response;
 	}
-
-	//--------------------------------------------------------------------
 
 	/**
 	 * Runs through our list of filters provided by the configuration
@@ -224,16 +270,32 @@ class Filters
 			return $this;
 		}
 
+		if ($this->modules->shouldDiscover('filters'))
+		{
+			$this->discoverFilters();
+		}
+
 		$this->processGlobals($uri);
 		$this->processMethods();
 		$this->processFilters($uri);
+
+		// Set the toolbar filter to the last position to be executed
+		if (in_array('toolbar', $this->filters['after'], true) &&
+			($count = count($this->filters['after'])) > 1 &&
+			$this->filters['after'][$count - 1] !== 'toolbar'
+		)
+		{
+			array_splice($this->filters['after'], array_search('toolbar', $this->filters['after']), 1);
+			$this->filters['after'][] = 'toolbar';
+		}
+
+		$this->processAliasesToClass('before');
+		$this->processAliasesToClass('after');
 
 		$this->initialized = true;
 
 		return $this;
 	}
-
-	//--------------------------------------------------------------------
 
 	/**
 	 * Returns the processed filters array.
@@ -243,6 +305,16 @@ class Filters
 	public function getFilters(): array
 	{
 		return $this->filters;
+	}
+
+	/**
+	 * Returns the filtersClass array.
+	 *
+	 * @return array
+	 */
+	public function getFiltersClass(): array
+	{
+		return $this->filtersClass;
 	}
 
 	/**
@@ -278,8 +350,6 @@ class Filters
 		return $this;
 	}
 
-	//--------------------------------------------------------------------
-
 	/**
 	 * Ensures that a specific filter is on and enabled for the current request.
 	 *
@@ -312,18 +382,26 @@ class Filters
 			throw FilterException::forNoAlias($name);
 		}
 
+		$classNames = (array) $this->config->aliases[$name];
+
+		foreach ($classNames as $className)
+		{
+			$this->argumentsClass[$className] = $this->arguments[$name] ?? null;
+		}
+
 		if (! isset($this->filters[$when][$name]))
 		{
-			$this->filters[$when][] = $name;
+			$this->filters[$when][]    = $name;
+			$this->filtersClass[$when] = array_merge($this->filtersClass[$when], $classNames);
 		}
 
 		return $this;
 	}
 
-	//--------------------------------------------------------------------
-
 	/**
 	 * Returns the arguments for a specified key, or all.
+	 *
+	 * @param string|null $key
 	 *
 	 * @return mixed
 	 */
@@ -333,15 +411,15 @@ class Filters
 	}
 
 	//--------------------------------------------------------------------
-	//--------------------------------------------------------------------
 	// Processors
 	//--------------------------------------------------------------------
 
 	/**
 	 * Add any applicable (not excluded) global filter settings to the mix.
 	 *
-	 * @param  string $uri
-	 * @return type
+	 * @param string $uri
+	 *
+	 * @return void
 	 */
 	protected function processGlobals(string $uri = null)
 	{
@@ -357,6 +435,7 @@ class Filters
 			'before',
 			'after',
 		];
+
 		foreach ($sets as $set)
 		{
 			if (isset($this->config->globals[$set]))
@@ -382,6 +461,7 @@ class Filters
 					{
 						$alias = $rules; // simple name of filter to apply
 					}
+
 					if ($keep)
 					{
 						$this->filters[$set][] = $alias;
@@ -391,12 +471,10 @@ class Filters
 		}
 	}
 
-	//--------------------------------------------------------------------
-
 	/**
 	 * Add any method-specific flters to the mix.
 	 *
-	 * @return type
+	 * @return void
 	 */
 	protected function processMethods()
 	{
@@ -415,13 +493,12 @@ class Filters
 		}
 	}
 
-	//--------------------------------------------------------------------
-
 	/**
 	 * Add any applicable configured filters to the mix.
 	 *
-	 * @param  string $uri
-	 * @return type
+	 * @param string $uri
+	 *
+	 * @return void
 	 */
 	protected function processFilters(string $uri = null)
 	{
@@ -444,6 +521,7 @@ class Filters
 					$this->filters['before'][] = $alias;
 				}
 			}
+
 			if (isset($settings['after']))
 			{
 				$path = $settings['after'];
@@ -456,11 +534,44 @@ class Filters
 	}
 
 	/**
+	 * Maps filter aliases to the equivalent filter classes
+	 *
+	 * @throws FilterException
+	 *
+	 * @return void
+	 */
+	protected function processAliasesToClass(string $position)
+	{
+		foreach ($this->filters[$position] as $alias => $rules)
+		{
+			if (is_numeric($alias) && is_string($rules))
+			{
+				$alias = $rules;
+			}
+
+			if (! array_key_exists($alias, $this->config->aliases))
+			{
+				throw FilterException::forNoAlias($alias);
+			}
+
+			if (is_array($this->config->aliases[$alias]))
+			{
+				$this->filtersClass[$position] = array_merge($this->filtersClass[$position], $this->config->aliases[$alias]);
+			}
+			else
+			{
+				$this->filtersClass[$position][] = $this->config->aliases[$alias];
+			}
+		}
+	}
+
+	/**
 	 * Check paths for match for URI
 	 *
-	 * @param  string $uri   URI to test against
-	 * @param  mixed  $paths The path patterns to test
-	 * @return boolean		True if any of the paths apply to the URI
+	 * @param string $uri   URI to test against
+	 * @param mixed  $paths The path patterns to test
+	 *
+	 * @return boolean True if any of the paths apply to the URI
 	 */
 	private function pathApplies(string $uri, $paths)
 	{
@@ -489,7 +600,7 @@ class Filters
 				return true;
 			}
 		}
+
 		return false;
 	}
-
 }

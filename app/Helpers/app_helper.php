@@ -5,12 +5,13 @@ use Config\Database;
 
 function active_business()
 {
-    $app = get_option('active_shortcode');
+    $uid = (new \App\Libraries\IonAuth())->getUserId();
+    $app = get_option($uid.'_active_shortcode');
     $model = new BusinessModel();
     if (isset($app) && is_numeric($app) && $found = $model->find($app)) {
         $found = $found;
     } else {
-        $found = $model->first();
+        $found = $model->where('user', $uid)->first();
     }
 
     $ret = ($found != null && is_object($found)) ? $found : false;

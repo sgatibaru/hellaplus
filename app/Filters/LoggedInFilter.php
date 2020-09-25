@@ -17,7 +17,7 @@ class LoggedInFilter implements FilterInterface
     /**
      * @inheritDoc
      */
-    public function before(RequestInterface $request)
+    public function before(RequestInterface $request, $arguments = null)
     {
         $this->session = \Config\Services::session();
         $this->ionAuth = new IonAuth();
@@ -31,7 +31,7 @@ class LoggedInFilter implements FilterInterface
     /**
      * @inheritDoc
      */
-    public function after(RequestInterface $request, ResponseInterface $response)
+    public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
 
     }

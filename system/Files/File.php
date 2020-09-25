@@ -39,9 +39,9 @@
 
 namespace CodeIgniter\Files;
 
-use SplFileInfo;
 use CodeIgniter\Files\Exceptions\FileException;
 use CodeIgniter\Files\Exceptions\FileNotFoundException;
+use SplFileInfo;
 
 /**
  * Wrapper for PHP's built-in SplFileInfo, with goodies.
@@ -54,9 +54,16 @@ class File extends SplFileInfo
 	/**
 	 * The files size in bytes
 	 *
-	 * @var float
+	 * @var integer
 	 */
 	protected $size;
+
+	/**
+	 * Original MimeType
+	 *
+	 * @var null|string
+	 */
+	protected $originalMimeType = null;
 
 	//--------------------------------------------------------------------
 
@@ -90,12 +97,7 @@ class File extends SplFileInfo
 	 */
 	public function getSize()
 	{
-		if (is_null($this->size))
-		{
-			$this->size = parent::getSize();
-		}
-
-		return $this->size;
+		return $this->size ?? ($this->size = parent::getSize());
 	}
 
 	/**
@@ -138,13 +140,15 @@ class File extends SplFileInfo
 	 * the $_FILES array, but should use other methods to more accurately
 	 * determine the type of file, like finfo, or mime_content_type().
 	 *
-	 * @return string|null The media type we determined it to be.
+	 * @return string The media type we determined it to be.
 	 */
 	public function getMimeType(): string
 	{
 		if (! function_exists('finfo_open'))
 		{
+			// @codeCoverageIgnoreStart
 			return $this->originalMimeType ?? 'application/octet-stream';
+			// @codeCoverageIgnoreEnd
 		}
 
 		$finfo    = finfo_open(FILEINFO_MIME_TYPE);
@@ -193,7 +197,7 @@ class File extends SplFileInfo
 			throw FileException::forUnableToMove($this->getBasename(), $targetPath, strip_tags($error['message']));
 		}
 
-		@chmod($targetPath, 0777 & ~umask());
+		@chmod($destination, 0777 & ~umask());
 
 		return new File($destination);
 	}

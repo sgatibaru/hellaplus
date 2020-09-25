@@ -39,8 +39,8 @@
 
 namespace CodeIgniter\Database;
 
-use CodeIgniter\Events\Events;
 use CodeIgniter\Database\Exceptions\DatabaseException;
+use CodeIgniter\Events\Events;
 
 /**
  * Class BaseConnection
@@ -58,7 +58,7 @@ abstract class BaseConnection implements ConnectionInterface
 	/**
 	 * Database port
 	 *
-	 * @var integer
+	 * @var integer|string
 	 */
 	protected $port = '';
 
@@ -129,20 +129,6 @@ abstract class BaseConnection implements ConnectionInterface
 	protected $DBDebug = false;
 
 	/**
-	 * Should we cache results?
-	 *
-	 * @var boolean
-	 */
-	protected $cacheOn = false;
-
-	/**
-	 * Path to store cache files.
-	 *
-	 * @var string
-	 */
-	protected $cacheDir;
-
-	/**
 	 * Character set
 	 *
 	 * @var string
@@ -199,21 +185,21 @@ abstract class BaseConnection implements ConnectionInterface
 	 * The last query object that was executed
 	 * on this connection.
 	 *
-	 * @var array
+	 * @var mixed
 	 */
 	protected $lastQuery;
 
 	/**
 	 * Connection ID
 	 *
-	 * @var object|resource
+	 * @var object|resource|boolean
 	 */
 	public $connID = false;
 
 	/**
 	 * Result ID
 	 *
-	 * @var object|resource
+	 * @var object|resource|boolean
 	 */
 	public $resultID = false;
 
@@ -236,7 +222,7 @@ abstract class BaseConnection implements ConnectionInterface
 	/**
 	 * Identifier escape character
 	 *
-	 * @var string
+	 * @var string|array
 	 */
 	public $escapeChar = '"';
 
@@ -341,10 +327,7 @@ abstract class BaseConnection implements ConnectionInterface
 	{
 		foreach ($params as $key => $value)
 		{
-			if (property_exists($this, $key))
-			{
-				$this->$key = $value;
-			}
+			$this->$key = $value;
 		}
 	}
 
@@ -373,8 +356,15 @@ abstract class BaseConnection implements ConnectionInterface
 
 		$this->connectTime = microtime(true);
 
-		// Connect to the database and set the connection ID
-		$this->connID = $this->connect($this->pConnect);
+		try
+		{
+			// Connect to the database and set the connection ID
+			$this->connID = $this->connect($this->pConnect);
+		}
+		catch (\Throwable $e)
+		{
+			log_message('error', 'Error connecting to the database: ' . $e->getMessage());
+		}
 
 		// No connection resource? Check if there is a failover else throw an error
 		if (! $this->connID)
@@ -394,8 +384,15 @@ abstract class BaseConnection implements ConnectionInterface
 						}
 					}
 
-					// Try to connect
-					$this->connID = $this->connect($this->pConnect);
+					try
+					{
+						// Try to connect
+						$this->connID = $this->connect($this->pConnect);
+					}
+					catch (\Throwable $e)
+					{
+						log_message('error', 'Error connecting to the database: ' . $e->getMessage());
+					}
 
 					// If a connection is made break the foreach loop
 					if ($this->connID)
@@ -544,17 +541,6 @@ abstract class BaseConnection implements ConnectionInterface
 	//--------------------------------------------------------------------
 
 	/**
-	 * Returns the last error encountered by this connection.
-	 *
-	 * @return mixed
-	 */
-	public function getError()
-	{
-	}
-
-	//--------------------------------------------------------------------
-
-	/**
 	 * The name of the platform in use (MySQLi, mssql, etc)
 	 *
 	 * @return string
@@ -602,7 +588,7 @@ abstract class BaseConnection implements ConnectionInterface
 	 */
 	public function addTableAlias(string $table)
 	{
-		if (! in_array($table, $this->aliasedTables))
+		if (! in_array($table, $this->aliasedTables, true))
 		{
 			$this->aliasedTables[] = $table;
 		}
@@ -613,7 +599,7 @@ abstract class BaseConnection implements ConnectionInterface
 	/**
 	 * Executes the query against the database.
 	 *
-	 * @param $sql
+	 * @param string $sql
 	 *
 	 * @return mixed
 	 */
@@ -853,8 +839,9 @@ abstract class BaseConnection implements ConnectionInterface
 		{
 			return false;
 		}
+
 		// When transactions are nested we only begin/commit/rollback the outermost ones
-		elseif ($this->transDepth > 0)
+		if ($this->transDepth > 0)
 		{
 			$this->transDepth ++;
 			return true;
@@ -892,8 +879,9 @@ abstract class BaseConnection implements ConnectionInterface
 		{
 			return false;
 		}
+
 		// When transactions are nested we only begin/commit/rollback the outermost ones
-		elseif ($this->transDepth > 1 || $this->_transCommit())
+		if ($this->transDepth > 1 || $this->_transCommit())
 		{
 			$this->transDepth --;
 			return true;
@@ -915,8 +903,9 @@ abstract class BaseConnection implements ConnectionInterface
 		{
 			return false;
 		}
+
 		// When transactions are nested we only begin/commit/rollback the outermost ones
-		elseif ($this->transDepth > 1 || $this->_transRollback())
+		if ($this->transDepth > 1 || $this->_transRollback())
 		{
 			$this->transDepth --;
 			return true;
@@ -1002,7 +991,7 @@ abstract class BaseConnection implements ConnectionInterface
 			$this->initialize();
 		}
 
-		$this->pretend(true);
+		$this->pretend();
 
 		$sql = $func($this);
 
@@ -1010,6 +999,7 @@ abstract class BaseConnection implements ConnectionInterface
 
 		if ($sql instanceof QueryInterface)
 		{
+			// @phpstan-ignore-next-line
 			$sql = $sql->getOriginalQuery();
 		}
 
@@ -1170,13 +1160,13 @@ abstract class BaseConnection implements ConnectionInterface
 			//
 			// NOTE: The ! empty() condition prevents this method
 			//       from breaking when QB isn't enabled.
-			if (! empty($this->aliasedTables) && in_array($parts[0], $this->aliasedTables))
+			if (! empty($this->aliasedTables) && in_array($parts[0], $this->aliasedTables, true))
 			{
 				if ($protectIdentifiers === true)
 				{
 					foreach ($parts as $key => $val)
 					{
-						if (! in_array($val, $this->reservedIdentifiers))
+						if (! in_array($val, $this->reservedIdentifiers, true))
 						{
 							$parts[$key] = $this->escapeIdentifiers($val);
 						}
@@ -1261,7 +1251,7 @@ abstract class BaseConnection implements ConnectionInterface
 			}
 		}
 
-		if ($protectIdentifiers === true && ! in_array($item, $this->reservedIdentifiers))
+		if ($protectIdentifiers === true && ! in_array($item, $this->reservedIdentifiers, true))
 		{
 			$item = $this->escapeIdentifiers($item);
 		}
@@ -1282,11 +1272,12 @@ abstract class BaseConnection implements ConnectionInterface
 	 */
 	public function escapeIdentifiers($item)
 	{
-		if ($this->escapeChar === '' || empty($item) || in_array($item, $this->reservedIdentifiers))
+		if ($this->escapeChar === '' || empty($item) || in_array($item, $this->reservedIdentifiers, true))
 		{
 			return $item;
 		}
-		elseif (is_array($item))
+
+		if (is_array($item))
 		{
 			foreach ($item as $key => $value)
 			{
@@ -1295,10 +1286,12 @@ abstract class BaseConnection implements ConnectionInterface
 
 			return $item;
 		}
+
 		// Avoid breaking functions and literal values inside queries
-		elseif (ctype_digit($item) || $item[0] === "'" || ( $this->escapeChar !== '"' && $item[0] === '"') ||
-				strpos($item, '(') !== false
-		)
+		if (ctype_digit($item)
+			|| $item[0] === "'"
+			|| ( $this->escapeChar !== '"' && $item[0] === '"')
+			|| strpos($item, '(') !== false)
 		{
 			return $item;
 		}
@@ -1361,7 +1354,7 @@ abstract class BaseConnection implements ConnectionInterface
 	/**
 	 * Returns the total number of rows affected by this query.
 	 *
-	 * @return mixed
+	 * @return integer
 	 */
 	abstract public function affectedRows(): int;
 
@@ -1381,9 +1374,7 @@ abstract class BaseConnection implements ConnectionInterface
 	{
 		if (is_array($str))
 		{
-			$str = array_map([&$this, 'escape'], $str);
-
-			return $str;
+			return array_map([&$this, 'escape'], $str);
 		}
 		else if (is_string($str) || ( is_object($str) && method_exists($str, '__toString')))
 		{
@@ -1454,7 +1445,7 @@ abstract class BaseConnection implements ConnectionInterface
 	 * Calls the individual driver for platform
 	 * specific escaping for LIKE conditions
 	 *
-	 * @param  string|string[]
+	 * @param  string|string[] $str
 	 * @return string|string[]
 	 */
 	public function escapeLikeString($str)
@@ -1492,7 +1483,8 @@ abstract class BaseConnection implements ConnectionInterface
 	 */
 	public function callFunction(string $functionName, ...$params): bool
 	{
-		$driver = ($this->DBDriver === 'postgre' ? 'pg' : strtolower($this->DBDriver)) . '_';
+		$driver = strtolower($this->DBDriver);
+		$driver = ($driver === 'postgre' ? 'pg' : $driver) . '_';
 
 		if (false === strpos($driver, $functionName))
 		{
@@ -1587,7 +1579,7 @@ abstract class BaseConnection implements ConnectionInterface
 	 */
 	public function tableExists(string $tableName): bool
 	{
-		return in_array($this->protectIdentifiers($tableName, true, false, false), $this->listTables());
+		return in_array($this->protectIdentifiers($tableName, true, false, false), $this->listTables(), true);
 	}
 
 	//--------------------------------------------------------------------
@@ -1662,7 +1654,7 @@ abstract class BaseConnection implements ConnectionInterface
 	 */
 	public function fieldExists(string $fieldName, string $tableName): bool
 	{
-		return in_array($fieldName, $this->getFieldNames($tableName));
+		return in_array($fieldName, $this->getFieldNames($tableName), true);
 	}
 
 	//--------------------------------------------------------------------
@@ -1671,13 +1663,11 @@ abstract class BaseConnection implements ConnectionInterface
 	 * Returns an object with field data
 	 *
 	 * @param  string $table the table name
-	 * @return array|false
+	 * @return array
 	 */
 	public function getFieldData(string $table)
 	{
-		$fields = $this->_fieldData($this->protectIdentifiers($table, true, false, false));
-
-		return $fields ?? false;
+		return $this->_fieldData($this->protectIdentifiers($table, true, false, false));
 	}
 
 	//--------------------------------------------------------------------
@@ -1686,13 +1676,11 @@ abstract class BaseConnection implements ConnectionInterface
 	 * Returns an object with key data
 	 *
 	 * @param  string $table the table name
-	 * @return array|false
+	 * @return array
 	 */
 	public function getIndexData(string $table)
 	{
-		$fields = $this->_indexData($this->protectIdentifiers($table, true, false, false));
-
-		return $fields ?? false;
+		return $this->_indexData($this->protectIdentifiers($table, true, false, false));
 	}
 
 	//--------------------------------------------------------------------
@@ -1701,13 +1689,11 @@ abstract class BaseConnection implements ConnectionInterface
 	 * Returns an object with foreign key data
 	 *
 	 * @param  string $table the table name
-	 * @return array|false
+	 * @return array
 	 */
 	public function getForeignKeyData(string $table)
 	{
-		$fields = $this->_foreignKeyData($this->protectIdentifiers($table, true, false, false));
-
-		return $fields ?? false;
+		return $this->_foreignKeyData($this->protectIdentifiers($table, true, false, false));
 	}
 
 	//--------------------------------------------------------------------
@@ -1785,9 +1771,9 @@ abstract class BaseConnection implements ConnectionInterface
 	/**
 	 * Insert ID
 	 *
-	 * @return integer
+	 * @return integer|string
 	 */
-	abstract public function insertID(): int;
+	abstract public function insertID();
 
 	//--------------------------------------------------------------------
 
@@ -1796,9 +1782,9 @@ abstract class BaseConnection implements ConnectionInterface
 	 *
 	 * @param boolean $constrainByPrefix
 	 *
-	 * @return string
+	 * @return string|false
 	 */
-	abstract protected function _listTables(bool $constrainByPrefix = false): string;
+	abstract protected function _listTables(bool $constrainByPrefix = false);
 
 	//--------------------------------------------------------------------
 
@@ -1807,9 +1793,9 @@ abstract class BaseConnection implements ConnectionInterface
 	 *
 	 * @param string $table
 	 *
-	 * @return string
+	 * @return string|false
 	 */
-	abstract protected function _listColumns(string $table = ''): string;
+	abstract protected function _listColumns(string $table = '');
 
 	//--------------------------------------------------------------------
 

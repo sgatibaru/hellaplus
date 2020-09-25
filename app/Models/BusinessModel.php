@@ -11,7 +11,7 @@ class BusinessModel extends \CodeIgniter\Model
 
     protected $returnType = '\App\Entities\BusinessEntity';
 
-    protected $allowedFields = ['name', 'shortcode', 'type', 'consumer_key', 'env', 'consumer_secret', 'initiator_username', 'initiator_password'];
+    protected $allowedFields = ['name', 'shortcode', 'user', 'type', 'consumer_key', 'env', 'consumer_secret', 'initiator_username', 'initiator_password'];
 
     protected $validationRules = [
         'name'  => 'trim|required',

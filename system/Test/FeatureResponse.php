@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CodeIgniter
  *
@@ -39,8 +40,8 @@
 namespace CodeIgniter\Test;
 
 use CodeIgniter\HTTP\RedirectResponse;
-use CodeIgniter\HTTP\Response;
-use Config\Format;
+use CodeIgniter\HTTP\ResponseInterface;
+use Config\Services;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -48,11 +49,10 @@ use PHPUnit\Framework\TestCase;
  */
 class FeatureResponse extends TestCase
 {
-
 	/**
 	 * The response.
 	 *
-	 * @var \CodeIgniter\HTTP\Response
+	 * @var \CodeIgniter\HTTP\ResponseInterface
 	 */
 	public $response;
 
@@ -66,9 +66,9 @@ class FeatureResponse extends TestCase
 	/**
 	 * Constructor.
 	 *
-	 * @param Response $response
+	 * @param ResponseInterface $response
 	 */
-	public function __construct(Response $response = null)
+	public function __construct(ResponseInterface $response = null)
 	{
 		$this->response = $response;
 
@@ -91,15 +91,17 @@ class FeatureResponse extends TestCase
 	 */
 	public function isOK(): bool
 	{
+		$status = $this->response->getStatusCode();
+
 		// Only 200 and 300 range status codes
 		// are considered valid.
-		if ($this->response->getStatusCode() >= 400 || $this->response->getStatusCode() < 200)
+		if ($status >= 400 || $status < 200)
 		{
 			return false;
 		}
 
-		// Empty bodies are not considered valid.
-		if (empty($this->response->getBody()))
+		// Empty bodies are not considered valid, unless in redirects
+		if ($status < 300 && empty($this->response->getBody()))
 		{
 			return false;
 		}
@@ -108,13 +110,15 @@ class FeatureResponse extends TestCase
 	}
 
 	/**
-	 * Returns whether or not the Response was a redirect response
+	 * Returns whether or not the Response was a redirect or RedirectResponse
 	 *
 	 * @return boolean
 	 */
 	public function isRedirect(): bool
 	{
-		return $this->response instanceof RedirectResponse;
+		return $this->response instanceof RedirectResponse
+			|| $this->response->hasHeader('Location')
+			|| $this->response->hasHeader('Refresh');
 	}
 
 	/**
@@ -124,7 +128,32 @@ class FeatureResponse extends TestCase
 	 */
 	public function assertRedirect()
 	{
-		$this->assertTrue($this->isRedirect(), 'Response is not a RedirectResponse.');
+		$this->assertTrue($this->isRedirect(), 'Response is not a redirect or RedirectResponse.');
+	}
+
+	/**
+	 * Returns the URL set for redirection.
+	 *
+	 * @return string|null
+	 */
+	public function getRedirectUrl(): ?string
+	{
+		if (! $this->isRedirect())
+		{
+			return null;
+		}
+
+		if ($this->response->hasHeader('Location'))
+		{
+			return $this->response->getHeaderLine('Location');
+		}
+
+		if ($this->response->hasHeader('Refresh'))
+		{
+			return str_replace('0;url=', '', $this->response->getHeaderLine('Refresh'));
+		}
+
+		return null;
 	}
 
 	/**
@@ -136,7 +165,7 @@ class FeatureResponse extends TestCase
 	 */
 	public function assertStatus(int $code)
 	{
-		$this->assertEquals($code, (int) $this->response->getStatusCode());
+		$this->assertEquals($code, $this->response->getStatusCode());
 	}
 
 	/**
@@ -156,8 +185,8 @@ class FeatureResponse extends TestCase
 	/**
 	 * Asserts that an SESSION key has been set and, optionally, test it's value.
 	 *
-	 * @param string $key
-	 * @param null   $value
+	 * @param string      $key
+	 * @param string|null $value
 	 *
 	 * @throws \Exception
 	 */
@@ -190,8 +219,8 @@ class FeatureResponse extends TestCase
 	/**
 	 * Asserts that the Response contains a specific header.
 	 *
-	 * @param string $key
-	 * @param null   $value
+	 * @param string      $key
+	 * @param string|null $value
 	 *
 	 * @throws \Exception
 	 */
@@ -225,8 +254,8 @@ class FeatureResponse extends TestCase
 	 * Asserts that the response has the specified cookie.
 	 *
 	 * @param string      $key
-	 * @param null        $value
-	 * @param string|null $prefix
+	 * @param string|null $value
+	 * @param string      $prefix
 	 *
 	 * @throws \Exception
 	 */
@@ -363,15 +392,24 @@ class FeatureResponse extends TestCase
 	/**
 	 * Test that the response contains a matching JSON fragment.
 	 *
-	 * @param array $fragment
+	 * @param array   $fragment
+	 * @param boolean $strict
 	 *
 	 * @throws \Exception
 	 */
-	public function assertJSONFragment(array $fragment)
+	public function assertJSONFragment(array $fragment, bool $strict = false)
 	{
-		$json = json_decode($this->getJSON(), true);
+		$json    = json_decode($this->getJSON(), true);
+		$patched = array_replace_recursive($json, $fragment);
 
-		$this->assertArraySubset($fragment, $json, false, 'Response does not contain a matching JSON fragment.');
+		if ($strict)
+		{
+			$this->assertSame($json, $patched, 'Response does not contain a matching JSON fragment.');
+		}
+		else
+		{
+			$this->assertEquals($json, $patched, 'Response does not contain a matching JSON fragment.');
+		}
 	}
 
 	/**
@@ -388,9 +426,7 @@ class FeatureResponse extends TestCase
 
 		if (is_array($test))
 		{
-			$config    = new Format();
-			$formatter = $config->getFormatter('application/json');
-			$test      = $formatter->format($test);
+			$test = Services::format()->getFormatter('application/json')->format($test);
 		}
 
 		$this->assertJsonStringEqualsJsonString($test, $json, 'Response does not contain matching JSON.');

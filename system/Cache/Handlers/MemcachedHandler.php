@@ -78,17 +78,15 @@ class MemcachedHandler implements CacheInterface
 	/**
 	 * Constructor.
 	 *
-	 * @param  type $config
-	 * @throws type
+	 * @param \Config\Cache $config
 	 */
 	public function __construct($config)
 	{
-		$config       = (array)$config;
-		$this->prefix = $config['prefix'] ?? '';
+		$this->prefix = $config->prefix ?: '';
 
 		if (! empty($config))
 		{
-			$this->config = array_merge($this->config, $config['memcached']);
+			$this->config = array_merge($this->config, $config->memcached);
 		}
 	}
 
@@ -208,7 +206,7 @@ class MemcachedHandler implements CacheInterface
 		elseif ($this->memcached instanceof \Memcache)
 		{
 			$flags = false;
-			$data  = $this->memcached->get($key, $flags);
+			$data  = $this->memcached->get($key, $flags); // @phpstan-ignore-line
 
 			// check for unmatched key (i.e. $flags is untouched)
 			if ($flags === false)
@@ -217,7 +215,7 @@ class MemcachedHandler implements CacheInterface
 			}
 		}
 
-		return is_array($data) ? $data[0] : $data;
+		return is_array($data) ? $data[0] : $data; // @phpstan-ignore-line
 	}
 
 	//--------------------------------------------------------------------
@@ -248,11 +246,13 @@ class MemcachedHandler implements CacheInterface
 		{
 			return $this->memcached->set($key, $value, $ttl);
 		}
-		elseif ($this->memcached instanceof \Memcache)
+
+		if ($this->memcached instanceof \Memcache)
 		{
 			return $this->memcached->set($key, $value, 0, $ttl);
 		}
 
+		// @phpstan-ignore-next-line
 		return false;
 	}
 
@@ -263,7 +263,7 @@ class MemcachedHandler implements CacheInterface
 	 *
 	 * @param string $key Cache item name
 	 *
-	 * @return mixed
+	 * @return boolean
 	 */
 	public function delete(string $key)
 	{
@@ -291,6 +291,7 @@ class MemcachedHandler implements CacheInterface
 
 		$key = $this->prefix . $key;
 
+		// @phpstan-ignore-next-line
 		return $this->memcached->increment($key, $offset, $offset, 60);
 	}
 
@@ -314,6 +315,7 @@ class MemcachedHandler implements CacheInterface
 		$key = $this->prefix . $key;
 
 		//FIXME: third parameter isn't other handler actions.
+		// @phpstan-ignore-next-line
 		return $this->memcached->decrement($key, $offset, $offset, 60);
 	}
 
@@ -322,7 +324,7 @@ class MemcachedHandler implements CacheInterface
 	/**
 	 * Will delete all items in the entire cache.
 	 *
-	 * @return mixed
+	 * @return boolean
 	 */
 	public function clean()
 	{

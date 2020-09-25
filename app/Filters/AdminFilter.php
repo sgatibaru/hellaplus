@@ -15,7 +15,7 @@ class AdminFilter implements \CodeIgniter\Filters\FilterInterface
     /**
      * @inheritDoc
      */
-    public function before(RequestInterface $request)
+    public function before(RequestInterface $request, $arguments = null)
     {
         $this->ionAuth = new \App\Libraries\IonAuth();
         $this->session = \Config\Services::session();
@@ -30,7 +30,7 @@ class AdminFilter implements \CodeIgniter\Filters\FilterInterface
     /**
      * @inheritDoc
      */
-    public function after(RequestInterface $request, ResponseInterface $response)
+    public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
 
     }

@@ -38,6 +38,8 @@
 
 namespace CodeIgniter\Debug\Toolbar\Collectors;
 
+use CodeIgniter\Debug\Exceptions;
+
 /**
  * Base Toolbar collector
  */
@@ -198,8 +200,6 @@ class BaseCollector
 	 *          'bar' => 'baz'
 	 *      ],
 	 *  ];
-	 *
-	 * @return null
 	 */
 	public function getVarData()
 	{
@@ -253,26 +253,11 @@ class BaseCollector
 	 */
 	public function cleanPath(string $file): string
 	{
-		if (strpos($file, APPPATH) === 0)
-		{
-			$file = 'APPPATH/' . substr($file, strlen(APPPATH));
-		}
-		elseif (strpos($file, SYSTEMPATH) === 0)
-		{
-			$file = 'SYSTEMPATH/' . substr($file, strlen(SYSTEMPATH));
-		}
-		elseif (strpos($file, FCPATH) === 0)
-		{
-			$file = 'FCPATH/' . substr($file, strlen(FCPATH));
-		}
-
-		return $file;
+		return Exceptions::cleanPath($file);
 	}
 
 	/**
 	 * Gets the "badge" value for the button.
-	 *
-	 * @return null
 	 */
 	public function getBadgeValue()
 	{

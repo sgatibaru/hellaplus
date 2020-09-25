@@ -95,6 +95,70 @@ class Authe extends BaseController
         }
     }
 
+    public function register()
+    {
+        if($this->ionAuth->loggedIn()) {
+            return redirect()->to(site_url('admin'));
+        }
+
+        if($this->request->getPost()) {
+            //Register
+            $validation = \Config\Services::validation();
+            $validation->setRule('first_name', 'First Name', 'trim|required');
+            $validation->setRule('last_name', 'Last Name', 'trim|required');
+            $validation->setRule('phone_number', 'Phone Number', 'trim|required|min_length[10]|max_length[13]');
+            $validation->setRule('email', 'Email Address', 'trim|required|valid_email');
+            $validation->setRule('password', 'Password', 'trim|required|min_length[8]');
+            $validation->setRule('password', 'Password', 'trim|required|matches[password]', ['matches' => "Passwords do not match"]);
+            if($validation->withRequest($this->request)->run()) {
+                $email = $this->request->getPost('email');
+                $phone = $this->request->getPost('phone');
+                $first_name = $this->request->getPost('first_name');
+                $last_name = $this->request->getPost('last_name');
+                $password = $this->request->getPost('password');
+                $additional = [
+                    'first_name' => $first_name,
+                    'last_name'     => $last_name,
+                    'phone'     => $phone
+                ];
+                if($this->ionAuth->register($email, $password, $email, $additional)) {
+                    $this->session->setFlashdata('message', "Registration successful");
+                    $response = [
+                        'status'    => 'success',
+                        'notify'     => false,
+                        'callback'   => 'redirect("'.site_url('auth').'")'
+                    ];
+                } else {
+                    $this->session->setFlashdata('message', $this->ionAuth->errors($this->validationListTemplate));
+                    //return redirect()->back()->withInput();
+                    $response = [
+                        'status'    => 'error',
+                        'title'     => 'Invalid Credentials',
+                        'message'   => implode('. ', $this->ionAuth->errorsArray())
+                    ];
+                }
+
+            } else {
+                $message = $this->validation->getErrors() ? $this->validation->listErrors($this->validationListTemplate) : $this->session->getFlashdata('message');
+                $this->session->setFlashdata('message', $message);
+
+                //return redirect()->back()->withInput();
+                $response = [
+                    'status'    => 'error',
+                    'title'     => 'Validation Errors',
+                    'message'   => $message
+                ];
+            }
+
+            return $this->response->setContentType('application/json')->setBody(json_encode($response));
+        } else {
+            $data['message'] = $this->session->getFlashdata('message');
+            $data['title'] = 'Login';
+
+            return $this->_renderPage('auth/register', $data);
+        }
+    }
+
     public function forgot_password() {
         if($this->request->getPost()) {
             $this->validation->setRule('identity', 'Email Address', 'required|valid_email');

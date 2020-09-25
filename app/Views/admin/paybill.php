@@ -122,7 +122,7 @@ $shortcode = active_business();
                                             <div class="row">
                                                 <div class="col-md-12">
                                                     <label>SMS Username</label>
-                                                    <input type="text" class="form-control" name="sms_username" value="<?php echo get_option('sms_username', get_parent_option('sms_api', 'sms_api_username', '')); ?>" placeholder="SMS Username" required="">
+                                                    <input type="text" class="form-control" name="<?php echo $shortcode->id; ?>_sms_username" value="<?php echo get_option($shortcode->id.'_sms_username', get_parent_option('sms_api', 'sms_api_username', '')); ?>" placeholder="SMS Username" required="">
                                                 </div>
                                             </div>
                                         </div>
@@ -130,7 +130,7 @@ $shortcode = active_business();
                                             <div class="row">
                                                 <div class="col-md-12">
                                                     <label>API Key</label>
-                                                    <input type="text" class="form-control" name="sms_apikey" value="<?php echo get_option('sms_apikey', get_parent_option('sms_api', 'sms_api_apikey', '')); ?>" placeholder="API Key" required="">
+                                                    <input type="text" class="form-control" name="<?php echo $shortcode->id; ?>_sms_apikey" value="<?php echo get_option($shortcode->id.'_sms_apikey', get_parent_option('sms_api', 'sms_api_apikey', '')); ?>" placeholder="API Key" required="">
                                                 </div>
                                             </div>
                                         </div>
@@ -138,7 +138,7 @@ $shortcode = active_business();
                                             <div class="row">
                                                 <div class="col-md-12">
                                                     <label>API Sender ID <small>(Leave blank if you have not set up a Sender ID)</small></label>
-                                                    <input type="text" class="form-control" min="1" name="sms_sender_id" value="<?php echo get_option('sms_sender_id', get_parent_option('sms_api', 'sms_api_sender_id', '')); ?>" placeholder="API Sender ID">
+                                                    <input type="text" class="form-control" name="<?php echo $shortcode->id; ?>_sms_sender_id" value="<?php echo get_option($shortcode->id.'_sms_sender_id', get_parent_option('sms_api', 'sms_api_sender_id', '')); ?>" placeholder="API Sender ID">
                                                 </div>
                                             </div>
                                         </div>
@@ -158,7 +158,7 @@ $shortcode = active_business();
                                         <div class="form-group">
                                             <div class="row">
                                                 <div class="col-md-12">
-                                                    <label><input type="checkbox" class="checkbox checkbox-inline" value="1" name="sms_active" <?php echo get_option('sms_active', get_parent_option('sms_api', 'sms_active', false)) == 1 ? 'checked' : ''; ?>>  Active</label>
+                                                    <label><input type="checkbox" class="checkbox checkbox-inline" value="1" name="sms_active" <?php echo get_option($shortcode->id.'_sms_active', get_parent_option('sms_api', 'sms_active', false)) == 1 ? 'checked' : ''; ?>>  Active</label>
                                                 </div>
                                             </div>
                                         </div>
@@ -166,7 +166,7 @@ $shortcode = active_business();
                                             <div class="row">
                                                 <div class="col-md-12">
                                                     <label>SMS Template</label>
-                                                    <textarea rows="5" type="text" class="form-control" name="sms_template" required=""><?php echo get_option('sms_template', get_parent_option('sms_api', 'sms_template', FALSE)); ?></textarea>
+                                                    <textarea rows="5" type="text" class="form-control" name="sms_template" required=""><?php echo get_option($shortcode->id.'_sms_template', get_parent_option('sms_api', 'sms_template', FALSE)); ?></textarea>
                                                     <p>
                                                         <b>Some Placeholders include:</b><br/>
                                                         <code>{TransID}, {TransTime}, {MSISDN}, {TransAmount}, {BillRefNumber}, {FirstName}, {MiddleName}, {LastName}</code>

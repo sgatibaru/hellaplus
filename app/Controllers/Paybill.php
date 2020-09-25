@@ -81,8 +81,9 @@ class Paybill extends AdminController
             'message'   => 'Shortcode does not exist'
         ];
         if($bs) {
-            set_option('active_business', $bs->id);
-            set_option('active_shortcode', $bs->id);
+            $owner = empty($bs->owner) ? '' : $bs->owner->id;
+            set_option($owner.'_active_business', $bs->id);
+            set_option($owner.'_active_shortcode', $bs->id);
             $response = [
                 'status'    => 'success',
                 'title'     => 'Switch Successful',

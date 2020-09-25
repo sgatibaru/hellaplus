@@ -11,7 +11,7 @@ class CustomerModel extends \CodeIgniter\Model
 
     protected $returnType = '\App\Entities\CustomerEntity';
 
-    protected $allowedFields = ['fname', 'mname', 'lname', 'phone'];
+    protected $allowedFields = ['fname', 'mname', 'lname', 'phone', 'business'];
 
     protected $validationRules = [
         'phone'  => 'trim|required|is_numeric|is_natural|exact_length[12]',

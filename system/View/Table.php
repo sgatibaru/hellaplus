@@ -85,16 +85,16 @@ class Table
 	/**
 	 * Table caption
 	 *
-	 * @var string
+	 * @var string|null
 	 */
-	public $caption = null;
+	public $caption;
 
 	/**
 	 * Table layout template
 	 *
 	 * @var array
 	 */
-	public $template = null;
+	public $template;
 
 	/**
 	 * Newline setting
@@ -113,9 +113,9 @@ class Table
 	/**
 	 * Callback for custom table layout
 	 *
-	 * @var function
+	 * @var callable|null
 	 */
-	public $function = null;
+	public $function;
 
 	/**
 	 * Set the template from the table config file if it exists
@@ -158,10 +158,9 @@ class Table
 	 *
 	 * Can be passed as an array or discreet params
 	 *
-	 * @param  mixed
 	 * @return Table
 	 */
-	public function setHeading($args = [])
+	public function setHeading()
 	{
 		$this->heading = $this->_prepArgs(func_get_args());
 		return $this;
@@ -172,10 +171,9 @@ class Table
 	 *
 	 * Can be passed as an array or discreet params
 	 *
-	 * @param  mixed
 	 * @return Table
 	 */
-	public function setFooting($args = [])
+	public function setFooting()
 	{
 		$this->footing = $this->_prepArgs(func_get_args());
 		return $this;
@@ -191,7 +189,7 @@ class Table
 	 *
 	 * @param  array   $array
 	 * @param  integer $columnLimit
-	 * @return array
+	 * @return array|false
 	 */
 	public function makeColumns($array = [], $columnLimit = 0)
 	{
@@ -252,10 +250,9 @@ class Table
 	 *
 	 * Can be passed as an array or discreet params
 	 *
-	 * @param  mixed
 	 * @return Table
 	 */
-	public function addRow($args = [])
+	public function addRow()
 	{
 		$this->rows[] = $this->_prepArgs(func_get_args());
 		return $this;
@@ -268,10 +265,10 @@ class Table
 	 *
 	 * Ensures a standard associative array format for all cell data
 	 *
-	 * @param  array
+	 * @param  array $args
 	 * @return array
 	 */
-	protected function _prepArgs($args)
+	protected function _prepArgs(array $args)
 	{
 		// If there is no $args[0], skip this and treat as an associative array
 		// This can happen if there is only a single key, for example this is passed to table->generate
@@ -283,7 +280,7 @@ class Table
 
 		foreach ($args as $key => $val)
 		{
-			is_array($val) || $args[$key] = ['data' => $val];
+			is_array($val) || $args[$key] = ['data' => $val]; // @phpstan-ignore-line
 		}
 
 		return $args;
@@ -532,12 +529,12 @@ class Table
 			return;
 		}
 
-		$this->temp = $this->_defaultTemplate();
+		$temp = $this->_defaultTemplate();
 		foreach (['table_open', 'thead_open', 'thead_close', 'heading_row_start', 'heading_row_end', 'heading_cell_start', 'heading_cell_end', 'tbody_open', 'tbody_close', 'row_start', 'row_end', 'cell_start', 'cell_end', 'row_alt_start', 'row_alt_end', 'cell_alt_start', 'cell_alt_end', 'table_close'] as $val)
 		{
 			if (! isset($this->template[$val]))
 			{
-				$this->template[$val] = $this->temp[$val];
+				$this->template[$val] = $temp[$val];
 			}
 		}
 	}

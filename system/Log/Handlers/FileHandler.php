@@ -77,7 +77,7 @@ class FileHandler extends BaseHandler implements HandlerInterface
 	{
 		parent::__construct($config);
 
-		$this->path = $config['path'] ?? WRITEPATH . 'logs/';
+		$this->path = empty($config['path']) ? WRITEPATH . 'logs/' : $config['path'];
 
 		$this->fileExtension = empty($config['fileExtension']) ? 'log' : $config['fileExtension'];
 		$this->fileExtension = ltrim($this->fileExtension, '.');
@@ -93,8 +93,8 @@ class FileHandler extends BaseHandler implements HandlerInterface
 	 * will stop. Any handlers that have not run, yet, will not
 	 * be run.
 	 *
-	 * @param $level
-	 * @param $message
+	 * @param string $level
+	 * @param string $message
 	 *
 	 * @return boolean
 	 * @throws \Exception
@@ -126,7 +126,7 @@ class FileHandler extends BaseHandler implements HandlerInterface
 		{
 			$microtime_full  = microtime(true);
 			$microtime_short = sprintf('%06d', ($microtime_full - floor($microtime_full)) * 1000000);
-			$date            = new \DateTime(date('Y-m-d H:i:s.' . $microtime_short, $microtime_full));
+			$date            = new \DateTime(date('Y-m-d H:i:s.' . $microtime_short, (int) $microtime_full));
 			$date            = $date->format($this->dateFormat);
 		}
 		else
@@ -157,7 +157,7 @@ class FileHandler extends BaseHandler implements HandlerInterface
 			chmod($filepath, $this->filePermissions);
 		}
 
-		return is_int($result);
+		return is_int($result); // @phpstan-ignore-line
 	}
 
 	//--------------------------------------------------------------------

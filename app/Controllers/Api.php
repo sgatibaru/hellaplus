@@ -4,6 +4,8 @@
 namespace App\Controllers;
 
 
+use App\Models\BusinessModel;
+
 class Api extends BaseController
 {
     /**
@@ -98,19 +100,26 @@ class Api extends BaseController
                     'ResultCode' => 0,
                     'ResultDesc' => 'Confirmation received successfully'
                 ];
+                $owner = (new BusinessModel())->where('shortcode', $shortcode)->first();
                 $customer = [
                     'phone'     => $data->MSISDN,
                     'fname'         => $data->FirstName,
                     'mname'         => $data->MiddleName,
                     'lname'         => $data->LastName,
+                    'business'      => !empty($owner) ? $owner->id : ''
                 ];
                 if(!(new \App\Models\CustomerModel())->where('phone', $data->MSISDN)->get()->getRowObject()) {
                     \Config\Database::connect()->table('customers')->insert($customer);
                 }
-                if(get_option('sms_active', get_parent_option('sms_api', 'sms_active', false)) == 1) {
-                    if($template = get_option('sms_template', get_parent_option('sms_api', 'sms_template', FALSE))) {
+                //Get the owner
+                $o_id = 'NONE';
+                if($owner) {
+                    $o_id = $owner->id;
+                }
+                if(get_option($o_id.'_sms_active', get_parent_option('sms_api', 'sms_active', false)) == 1) {
+                    if($template = get_option($o_id.'_sms_template', get_parent_option('sms_api', 'sms_template', FALSE))) {
                         $message = \Config\Services::parser()->setData((array)$data)->renderString($template);
-                        (new \App\Libraries\SMS())->send_sms($data->MSISDN, $message);
+                        (new \App\Libraries\SMS())->send_sms($data->MSISDN, $message, $owner);
                     }
                 }
                 @\Config\Database::connect()->table('businesses')->where('shortcode', $shortcode)->update(['api_setup'=>1]);

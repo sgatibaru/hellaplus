@@ -142,8 +142,8 @@ class DOMParser
 		// If Element is null, we're just scanning for text
 		if (is_null($element))
 		{
-			$content = $this->dom->saveHTML();
-			return strpos($content, $search) !== false;
+			$content = $this->dom->saveHTML($this->dom->documentElement);
+			return mb_strpos($content, $search) !== false;
 		}
 
 		$result = $this->doXPath($search, $element);
@@ -242,7 +242,7 @@ class DOMParser
 	 * @param  string $search
 	 * @param  string $element
 	 * @param  array  $paths
-	 * @return type
+	 * @return \DOMNodeList
 	 */
 
 	protected function doXPath(string $search = null, string $element, array $paths = [])
@@ -298,16 +298,14 @@ class DOMParser
 
 		$xpath = new \DOMXPath($this->dom);
 
-		$result = $xpath->query($path);
-
-		return $result;
+		return $xpath->query($path);
 	}
 
 	/**
 	 * Look for the a selector  in the passed text.
 	 *
 	 * @param  string $selector
-	 * @return type
+	 * @return array
 	 */
 	public function parseSelector(string $selector)
 	{

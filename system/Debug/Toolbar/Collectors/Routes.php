@@ -127,15 +127,15 @@ class Routes extends BaseCollector
 				'method'     => $router->methodName(),
 				'paramCount' => count($router->params()),
 				'truePCount' => count($params),
-				'params'     => $params ?? [],
+				'params'     => $params,
 			],
 		];
 
 		/*
 		* Defined Routes
 		*/
-		$routes    = [];
-		$methods    = [
+		$routes  = [];
+		$methods = [
 			'get',
 			'head',
 			'post',
@@ -158,8 +158,8 @@ class Routes extends BaseCollector
 				if (is_string($handler))
 				{
 					$routes[] = [
-						'method' => strtoupper($method),
-						'route' => $route,
+						'method'  => strtoupper($method),
+						'route'   => $route,
 						'handler' => $handler,
 					];
 				}

@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Income and Expense tracker for business and personal use.">
-    <meta name="author" content="Simcy Creative">
-    <link rel="icon" type="image/png" sizes="16x16" href="uploads/app/yv91yZHRY2MB84Y3vAnyGz89LYOBLDYm.png">
+    <meta name="description" content="Income tracker for business using M-Pesa via the API">
+    <meta name="author" content="Bennito254.com">
+    <link rel="icon" type="image/png" sizes="16x16" href="<?php echo get_option('site_logo', base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png')); ?>">
     <title><?php use App\Models\BusinessModel;
 
         echo @$title ? $title : 'Dashboard'; ?></title>
@@ -35,7 +35,7 @@ $active_business = active_business();
     <!-- logo -->
     <div class="branding">
         <a href="<?php echo site_url('admin'); ?>">
-            <img src="<?php echo base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png'); ?>"
+            <img src="<?php echo get_option('site_logo', base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png')); ?>"
                  class="img-responsive">
         </a>
     </div>
@@ -43,6 +43,15 @@ $active_business = active_business();
     <!-- Navigation -->
     <nav class="navigation">
         <ul class="nav navbar-nav">
+            <?php
+            if((new \App\Libraries\IonAuth())->isAdmin()) {
+                ?>
+                <li class="">
+                    <a href="<?php echo site_url(route_to('dashboard.index')); ?>">Dashboard</a>
+                </li>
+                <?php
+            }
+            ?>
             <li><a href="<?php echo site_url('admin'); ?>">Overview</a></li>
             <li>
                 <a href="<?php echo site_url('admin/transactions'); ?>"><?php echo (isset($active_business) && @$active_business->type == 'B2C') ? 'Disbursements' : 'Transactions'; ?></a>
@@ -64,7 +73,7 @@ $active_business = active_business();
                 <li class="divider"></li>
                 <?php
                 $businesses = new BusinessModel();
-                $businesses = $businesses->findAll();
+                $businesses = $businesses->where('user', $user->id)->findAll();
                 if ($businesses && count($businesses) > 0) {
                     foreach ($businesses as $business) {
                         ?>
@@ -107,89 +116,95 @@ $active_business = active_business();
 </header>
 <!-- Main content -->
 <div class="container">
-    <div class="page-heading">
-        <?php
-        if (@$active_business->type != 'B2C') {
-            if(isset($active_business->api_setup) && $active_business->api_setup != 1) {
-                ?>
-                <div>
-                    <div class="alert alert-danger">
-                        No Transaction will be posted here because you have not set up the API. Click the Button on the
-                        right to setup.
+    <?php
+    if(!isset($admin_dashboard) || $admin_dashboard !== true) {
+        ?>
+        <div class="page-heading">
+            <?php
+            if (@$active_business->type != 'B2C') {
+                if(isset($active_business->api_setup) && $active_business->api_setup != 1) {
+                    ?>
+                    <div>
+                        <div class="alert alert-danger">
+                            No Transaction will be posted here because you have not set up the API. Click the Button on the
+                            right to setup.
+                        </div>
+                        <button class="btn btn-primary pull-right ml-5 send-to-server-click"
+                                data="id:<?php echo $business->id; ?>|status:1"
+                                url="<?php echo site_url('admin/api/setup/' . $business->id); ?>" warning-title="API Setup"
+                                warning-message="You are about to register URLs to M-Pesa to receive transaction details"
+                                warning-button="Continue" loader="true" type="button"><span><i
+                                        class="glyphicon glyphicon-cog"></i></span> Set Up API
+                        </button>
                     </div>
-                    <button class="btn btn-primary pull-right ml-5 send-to-server-click"
-                            data="id:<?php echo $business->id; ?>|status:1"
-                            url="<?php echo site_url('admin/api/setup/' . $business->id); ?>" warning-title="API Setup"
-                            warning-message="You are about to register URLs to M-Pesa to receive transaction details"
-                            warning-button="Continue" loader="true" type="button"><span><i
-                                class="glyphicon glyphicon-cog"></i></span> Set Up API
-                    </button>
+                    <?php
+                }
+            } else {
+                ?>
+                <button class="btn btn-primary pull-right ml-5" type="button" data-toggle="modal" data-target="#NewB2C">
+                    <span><i class="glyphicon glyphicon-send"></i></span> Send Money
+                </button>
+                <div class="modal fade" id="NewB2C" role="dialog">
+                    <div class="modal-dialog modal-md">
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <form class="simcy-form" method="post" action="<?php echo site_url(route_to('admin.transactions.send_money')); ?>" data-parsley-validate="" loader="true">
+                                <div class="modal-header">
+                                    <h4 class="modal-title">Send Money</h4>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="form-group">
+                                        <label>Transaction Type</label>
+                                        <select class="form-control select2" name="command" required>
+                                            <option>-- Please select --</option>
+                                            <option value="SalaryPayment">Salary Payment</option>
+                                            <option value="PromotionPayment">Promotion Payment</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Phone Number</label>
+                                        <input type="text" class="form-control" name="phone" min="0" placeholder="Phone Number"
+                                               required/>
+                                        <small><span class="text-danger"><i class="glyphicon glyphicon-warning-sign"></i> confirm this is the actual phone number. No in-app validation for this!</span></small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Amount</label>
+                                        <input type="number" class="form-control" name="amount" min="50" value="50" max="70000"
+                                               placeholder="Amount to send" required/>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-primary">Send Request</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
                 <?php
             }
-        } else {
             ?>
-            <button class="btn btn-primary pull-right ml-5" type="button" data-toggle="modal" data-target="#NewB2C">
-                <span><i class="glyphicon glyphicon-send"></i></span> Send Money
-            </button>
-            <div class="modal fade" id="NewB2C" role="dialog">
-                <div class="modal-dialog modal-md">
-                    <!-- Modal content-->
-                    <div class="modal-content">
-                        <form class="simcy-form" method="post" action="<?php echo site_url(route_to('admin.transactions.send_money')); ?>" data-parsley-validate="" loader="true">
-                            <div class="modal-header">
-                                <h4 class="modal-title">Send Money</h4>
-                            </div>
-                            <div class="modal-body">
-                                <div class="form-group">
-                                    <label>Transaction Type</label>
-                                    <select class="form-control select2" name="command" required>
-                                        <option>-- Please select --</option>
-                                        <option value="SalaryPayment">Salary Payment</option>
-                                        <option value="PromotionPayment">Promotion Payment</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Phone Number</label>
-                                    <input type="text" class="form-control" name="phone" min="0" placeholder="Phone Number"
-                                           required/>
-                                    <small><span class="text-danger"><i class="glyphicon glyphicon-warning-sign"></i> confirm this is the actual phone number. No in-app validation for this!</span></small>
-                                </div>
-                                <div class="form-group">
-                                    <label>Amount</label>
-                                    <input type="number" class="form-control" name="amount" min="50" value="50" max="70000"
-                                           placeholder="Amount to send" required/>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                                <button type="submit" class="btn btn-primary">Send Request</button>
-                            </div>
-                        </form>
-                    </div>
+            <div class="heading-content">
+                <div class="user-image">
+                    <img src="<?php echo base_url('assets/images/avatar.png'); ?>" class="img-circle img-responsive">
+                </div>
+                <div class="heading-title">
+                    <h2><?php echo ($active_business) ? strtoupper($active_business->name) : 'No Shortcodes set up!'; ?></h2>
+                    <p>This is your dashboard. Overview of almost everything.</p>
                 </div>
             </div>
-            <?php
-        }
-        ?>
-        <div class="heading-content">
-            <div class="user-image">
-                <img src="<?php echo base_url('assets/images/avatar.png'); ?>" class="img-circle img-responsive">
-            </div>
-            <div class="heading-title">
-                <h2><?php echo ($active_business) ? strtoupper($active_business->name) : 'No Shortcodes set up!'; ?></h2>
-                <p>This is your dashboard. Overview of almost everything.</p>
-            </div>
         </div>
-    </div>
+        <?php
+    }
+    ?>
     <?php echo @$_content; ?>
     <!-- footer -->
     <footer>
         <div class="footer-logo">
-            <img src="<?php echo base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png'); ?>"
+            <img src="<?php echo get_option('site_logo', base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png')); ?>"
                  class="img-responsive">
         </div>
-        <p class="text-right pull-right">&copy; <?php echo date('Y') ?> Bennito254 <span>•</span> Version <?php echo get_option('_app_version', '0.0.1'); ?>
+        <p class="text-right pull-right">&copy; <?php echo date('Y') ?> <a target="_blank" href="https://bennito254.com"><?php echo get_option('site_name', 'Bennito254'); ?></a> <span>•</span> Version <?php echo get_option('_app_version', '0.0.1'); ?>
         </p>
     </footer>
 
@@ -203,6 +218,7 @@ $active_business = active_business();
                 </div>
                 <form class="simcy-form" action="<?php echo site_url('admin/paybill/create'); ?>"
                       data-parsley-validate="" loader="true" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="user" value="<?php echo (new \App\Libraries\IonAuth())->getUserId() ?>">
                     <div class="modal-body">
                         <p class="text-center">Create a new business shortcode.</p>
                         <div class="form-group">

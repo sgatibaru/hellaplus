@@ -17,6 +17,7 @@ class Settings extends AdminController
     public function sms()
     {
         if ($data = $this->request->getPost()) {
+            unset($data['id']);
             foreach($data as $key=>$value){
                 update_option($key, $value);
             }
@@ -37,9 +38,10 @@ class Settings extends AdminController
     public function sms_templates()
     {
         if ($data = $this->request->getPost()) {
-            update_option('sms_template', $this->request->getPost('sms_template'));
+            $id = $data['id'];
+            update_option($id.'_sms_template', $this->request->getPost('sms_template'));
             $active = (bool) $this->request->getPost('sms_active') ? '1' : NULL;
-            update_option('sms_active', $active);
+            update_option($id.'_sms_active', $active);
             $response = [
                 'status'    => 'success',
                 'title'     => 'Settings Updated',

@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Income and Expense tracker for business and personal use.">
-    <meta name="author" content="Simcy Creative">
-    <link rel="icon" type="image/png" sizes="16x16" href="<?php echo base_url('uploads/app/yv91yZHRY2MB84Y3vAnyGz89LYOBLDYm.png'); ?>">
+    <meta name="description" content="Income tracker for businesses using M-Pesa API">
+    <meta name="author" content="Bennito254.com">
+    <link rel="icon" type="image/png" sizes="16x16" href="<?php echo get_option('site_logo', base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png')); ?>">
     <title>Authentication</title>
     <!-- Material design icons -->
     <link href="<?php echo base_url('assets/fonts/mdi/css/materialdesignicons.min.css'); ?>" rel="stylesheet">
@@ -22,7 +22,7 @@
 <div class="auth-page">
     <div class="auth-card card">
         <div class="auth-logo">
-            <img src="<?php echo base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png'); ?>" class="img-responsive">
+            <img src="<?php echo get_option('site_logo', base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png')); ?>" class="img-responsive">
         </div>
         <?php
         if($message) {
@@ -57,8 +57,14 @@
                     <div class="form-group">
                         <div class="row">
                             <div class="col-md-12">
+                                <?php
+                                if(get_option('allow_registration', 1)) {
+                                    ?>
+                                    <a href="" class="auth-switch pull-right mt-10 text-muted text-thin" show=".register">Create New Account</a>
+                                    <?php
+                                }
+                                ?>
                                 <a href="" class="auth-switch pull-right mt-10 text-muted text-thin" show=".forgot">Forgot Password?</a>
-
                                 <button type="submit" class="btn btn-primary">Login Now</button>
                             </div>
                         </div>
@@ -66,6 +72,79 @@
                 </form>
             </div>
         </div>
+        <?php
+        if(get_option('allow_registration', 1)) {
+            ?>
+            <div class="register">
+                <div class="auth-heading mt-15">
+                    <h2 class="text-center">Welcome</h2>
+                    <p class="text-center">Registration Form</p>
+                </div>
+                <div class="auth-form">
+                    <form class="simcy-form" action="<?php echo site_url('auth/register'); ?>" data-parsley-validate="" method="POST" loader="true">
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label>First Name</label>
+                                    <input type="text" class="form-control" name="first_name" placeholder="First Name" required="">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label>Last Name</label>
+                                    <input type="text" class="form-control" name="last_name" placeholder="Last Name" required="">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label>Phone Number</label>
+                                    <input type="text" class="form-control" name="phone_number" placeholder="Phone Number" required="">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label>Email Address</label>
+                                    <input type="email" class="form-control" name="email" placeholder="Email Address" required="">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label>Password</label>
+                                    <input type="password" class="form-control" name="password" placeholder="Password" required="">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label>Confirm Password</label>
+                                    <input type="password" class="form-control" name="passwordb" placeholder="Confirm Password" required="">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <a href="" class="auth-switch pull-right mt-10 text-muted text-thin" show=".login">Already registered? Login</a>
+
+                                    <button type="submit" class="btn btn-primary">Create New Account</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <?php
+        }
+        ?>
         <div class="forgot">
             <div class="auth-heading mt-15">
                 <h2 class="text-center">Forgot password</h2>
@@ -95,7 +174,7 @@
             </div>
         </div>
     </div>
-    <p class="copyright text-thin text-muted"> &copy; <?php echo date('Y') ?> Bennito254 <span>•</span> All Rights Reserved.</p>
+    <p class="copyright text-thin text-muted"> &copy; <?php echo date('Y') ?> <a target="_blank" href="https://bennito254.com"><?php echo get_option('site_name', 'Bennito254'); ?></a> <span>•</span> All Rights Reserved.</p>
 </div>
 
 <!-- scripts -->

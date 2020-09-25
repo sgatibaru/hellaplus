@@ -40,12 +40,12 @@
 namespace CodeIgniter\I18n;
 
 use CodeIgniter\I18n\Exceptions\I18nException;
-use IntlCalendar;
-use Locale;
-use DateTime;
 use DateInterval;
+use DateTime;
 use DateTimeZone;
+use IntlCalendar;
 use IntlDateFormatter;
+use Locale;
 
 /**
  * Class Time
@@ -56,12 +56,13 @@ use IntlDateFormatter;
  * Requires the intl PHP extension.
  *
  * @package CodeIgniter\I18n
+ *
+ * @property string $date
  */
 class Time extends DateTime
 {
-
 	/**
-	 * @var string
+	 * @var \DateTimeZone
 	 */
 	protected $timezone;
 
@@ -85,7 +86,7 @@ class Time extends DateTime
 	protected static $relativePattern = '/this|next|last|tomorrow|yesterday|midnight|today|[+-]|first|last|ago/i';
 
 	/**
-	 * @var \CodeIgniter\I18n\Time
+	 * @var \CodeIgniter\I18n\Time|DateTime|null
 	 */
 	protected static $testNow;
 
@@ -96,9 +97,9 @@ class Time extends DateTime
 	/**
 	 * Time constructor.
 	 *
-	 * @param string|null $time
-	 * @param null        $timezone
-	 * @param string|null $locale
+	 * @param string|null               $time
+	 * @param \DateTimeZone|string|null $timezone
+	 * @param string|null               $locale
 	 *
 	 * @throws \Exception
 	 */
@@ -135,7 +136,7 @@ class Time extends DateTime
 			}
 		}
 
-		return parent::__construct($time, $this->timezone);
+		parent::__construct($time, $this->timezone);
 	}
 
 	//--------------------------------------------------------------------
@@ -162,9 +163,9 @@ class Time extends DateTime
 	 * Example:
 	 *  $time = Time::parse('first day of December 2008');
 	 *
-	 * @param string      $datetime
-	 * @param string|null $timezone
-	 * @param string|null $locale
+	 * @param string                    $datetime
+	 * @param \DateTimeZone|string|null $timezone
+	 * @param string|null               $locale
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -179,8 +180,8 @@ class Time extends DateTime
 	/**
 	 * Return a new time with the time set to midnight.
 	 *
-	 * @param null        $timezone
-	 * @param string|null $locale
+	 * @param \DateTimeZone|string|null $timezone
+	 * @param string|null               $locale
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -195,8 +196,8 @@ class Time extends DateTime
 	/**
 	 * Returns an instance set to midnight yesterday morning.
 	 *
-	 * @param null        $timezone
-	 * @param string|null $locale
+	 * @param \DateTimeZone|string|null $timezone
+	 * @param string|null               $locale
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -211,8 +212,8 @@ class Time extends DateTime
 	/**
 	 * Returns an instance set to midnight tomorrow morning.
 	 *
-	 * @param null        $timezone
-	 * @param string|null $locale
+	 * @param \DateTimeZone|string|null $timezone
+	 * @param string|null               $locale
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -228,11 +229,11 @@ class Time extends DateTime
 	 * Returns a new instance based on the year, month and day. If any of those three
 	 * are left empty, will default to the current value.
 	 *
-	 * @param integer|null $year
-	 * @param integer|null $month
-	 * @param integer|null $day
-	 * @param null         $timezone
-	 * @param string       $locale
+	 * @param integer|null              $year
+	 * @param integer|null              $month
+	 * @param integer|null              $day
+	 * @param \DateTimeZone|string|null $timezone
+	 * @param string|null               $locale
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -247,11 +248,11 @@ class Time extends DateTime
 	/**
 	 * Returns a new instance with the date set to today, and the time set to the values passed in.
 	 *
-	 * @param integer|null $hour
-	 * @param integer|null $minutes
-	 * @param integer|null $seconds
-	 * @param null         $timezone
-	 * @param string|null  $locale
+	 * @param integer|null              $hour
+	 * @param integer|null              $minutes
+	 * @param integer|null              $seconds
+	 * @param \DateTimeZone|string|null $timezone
+	 * @param string|null               $locale
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -266,14 +267,14 @@ class Time extends DateTime
 	/**
 	 * Returns a new instance with the date time values individually set.
 	 *
-	 * @param integer|null $year
-	 * @param integer|null $month
-	 * @param integer|null $day
-	 * @param integer|null $hour
-	 * @param integer|null $minutes
-	 * @param integer|null $seconds
-	 * @param null         $timezone
-	 * @param string|null  $locale
+	 * @param integer|null              $year
+	 * @param integer|null              $month
+	 * @param integer|null              $day
+	 * @param integer|null              $hour
+	 * @param integer|null              $minutes
+	 * @param integer|null              $seconds
+	 * @param \DateTimeZone|string|null $timezone
+	 * @param string|null               $locale
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -296,9 +297,9 @@ class Time extends DateTime
 	 * Provides a replacement for DateTime's own createFromFormat function, that provides
 	 * more flexible timeZone handling
 	 *
-	 * @param string              $format
-	 * @param string              $datetime
-	 * @param DateTimeZone|string $timeZone
+	 * @param string                    $format
+	 * @param string                    $datetime
+	 * @param \DateTimeZone|string|null $timeZone
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -315,16 +316,16 @@ class Time extends DateTime
 	/**
 	 * Returns a new instance with the datetime set based on the provided UNIX timestamp.
 	 *
-	 * @param integer      $timestamp
-	 * @param DateTimeZone $timeZone
-	 * @param string|null  $locale
+	 * @param integer                   $timestamp
+	 * @param \DateTimeZone|string|null $timezone
+	 * @param string|null               $locale
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
 	 */
-	public static function createFromTimestamp(int $timestamp, $timeZone = null, string $locale = null)
+	public static function createFromTimestamp(int $timestamp, $timezone = null, string $locale = null)
 	{
-		return new Time(date('Y-m-d H:i:s', $timestamp), $timeZone, $locale);
+		return new Time(date('Y-m-d H:i:s', $timestamp), $timezone, $locale);
 	}
 
 	//--------------------------------------------------------------------
@@ -356,7 +357,7 @@ class Time extends DateTime
 	 */
 	public function toDateTime()
 	{
-		$dateTime = new DateTime(null, $this->getTimezone());
+		$dateTime = new DateTime('', $this->getTimezone());
 		$dateTime->setTimestamp(parent::getTimestamp());
 
 		return $dateTime;
@@ -370,9 +371,9 @@ class Time extends DateTime
 	 * Creates an instance of Time that will be returned during testing
 	 * when calling 'Time::now' instead of the current time.
 	 *
-	 * @param \CodeIgniter\I18n\Time|string $datetime
-	 * @param null                          $timezone
-	 * @param string|null                   $locale
+	 * @param \CodeIgniter\I18n\Time|DateTime|string|null $datetime
+	 * @param \DateTimeZone|string|null                   $timezone
+	 * @param string|null                                 $locale
 	 *
 	 * @throws \Exception
 	 */
@@ -390,7 +391,7 @@ class Time extends DateTime
 		{
 			$datetime = new Time($datetime, $timezone, $locale);
 		}
-		else if ($datetime instanceof DateTime && ! $datetime instanceof Time)
+		elseif ($datetime instanceof DateTime && ! $datetime instanceof Time)
 		{
 			$datetime = new Time($datetime->format('Y-m-d H:i:s'), $timezone);
 		}
@@ -548,6 +549,7 @@ class Time extends DateTime
 	/**
 	 * Returns the age in years from the "current" date and 'now'
 	 *
+	 * @return integer
 	 * @throws \Exception
 	 */
 	public function getAge()
@@ -592,6 +594,7 @@ class Time extends DateTime
 			if ($transition['time'] > $this->format('U'))
 			{
 				$daylightSaving = (bool) $transition['isdst'] ?? $daylightSaving;
+				break;
 			}
 		}
 		return $daylightSaving;
@@ -641,7 +644,7 @@ class Time extends DateTime
 	/**
 	 * Sets the current year for this instance.
 	 *
-	 * @param $value
+	 * @param integer|string $value
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -654,7 +657,7 @@ class Time extends DateTime
 	/**
 	 * Sets the month of the year.
 	 *
-	 * @param $value
+	 * @param integer|string $value
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -677,7 +680,7 @@ class Time extends DateTime
 	/**
 	 * Sets the day of the month.
 	 *
-	 * @param $value
+	 * @param integer|string $value
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -702,7 +705,7 @@ class Time extends DateTime
 	/**
 	 * Sets the hour of the day (24 hour cycle)
 	 *
-	 * @param $value
+	 * @param integer|string $value
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -720,7 +723,7 @@ class Time extends DateTime
 	/**
 	 * Sets the minute of the hour
 	 *
-	 * @param $value
+	 * @param integer|string $value
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -738,7 +741,7 @@ class Time extends DateTime
 	/**
 	 * Sets the second of the minute.
 	 *
-	 * @param $value
+	 * @param integer|string $value
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -756,8 +759,8 @@ class Time extends DateTime
 	/**
 	 * Helper method to do the heavy lifting of the 'setX' methods.
 	 *
-	 * @param string $name
-	 * @param $value
+	 * @param string  $name
+	 * @param integer $value
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
@@ -767,20 +770,30 @@ class Time extends DateTime
 		list($year, $month, $day, $hour, $minute, $second) = explode('-', $this->format('Y-n-j-G-i-s'));
 		$$name                                             = $value;
 
-		return Time::create($year, $month, $day, $hour, $minute, $second, $this->getTimezoneName(), $this->locale);
+		return Time::create(
+			(int) $year,
+			(int) $month,
+			(int) $day,
+			(int) $hour,
+			(int) $minute,
+			(int) $second,
+			$this->getTimezoneName(),
+			$this->locale
+		);
 	}
 
 	/**
 	 * Returns a new instance with the revised timezone.
 	 *
-	 * @param \DateTimeZone $timezone
+	 * @param string|\DateTimeZone $timezone
 	 *
 	 * @return \CodeIgniter\I18n\Time
 	 * @throws \Exception
 	 */
 	public function setTimezone($timezone)
 	{
-		return Time::parse($this->toDateTimeString(), $timezone, $this->locale);
+		$timezone = $timezone instanceof DateTimeZone ? $timezone : new DateTimeZone($timezone);
+		return Time::instance($this->toDateTime()->setTimezone($timezone), $this->locale);
 	}
 
 	/**
@@ -1037,7 +1050,7 @@ class Time extends DateTime
 	 * @return string|boolean
 	 * @throws \Exception
 	 */
-	public function toLocalizedString(?string $format = null)
+	public function toLocalizedString(string $format = null)
 	{
 		$format = $format ?? $this->toStringFormat;
 
@@ -1089,7 +1102,7 @@ class Time extends DateTime
 		{
 			$testTime = $testTime->format('Y-m-d H:i:s');
 		}
-		else if (is_string($testTime))
+		elseif (is_string($testTime))
 		{
 			$timezone = $timezone ?: $this->timezone;
 			$timezone = $timezone instanceof DateTimeZone ? $timezone : new DateTimeZone($timezone);
@@ -1108,7 +1121,7 @@ class Time extends DateTime
 	 * Determines if the current instance's time is before $testTime,
 	 * after converting to UTC.
 	 *
-	 * @param $testTime
+	 * @param mixed       $testTime
 	 * @param string|null $timezone
 	 *
 	 * @return boolean
@@ -1128,7 +1141,7 @@ class Time extends DateTime
 	 * Determines if the current instance's time is after $testTime,
 	 * after converting in UTC.
 	 *
-	 * @param $testTime
+	 * @param mixed       $testTime
 	 * @param string|null $timezone
 	 *
 	 * @return boolean
@@ -1176,18 +1189,18 @@ class Time extends DateTime
 			$phrase = lang('Time.years', [abs($years)]);
 			$before = $years < 0;
 		}
-		else if ($months !== 0)
+		elseif ($months !== 0)
 		{
 			$phrase = lang('Time.months', [abs($months)]);
 			$before = $months < 0;
 		}
-		else if ($days !== 0 && (abs($days) >= 7))
+		elseif ($days !== 0 && (abs($days) >= 7))
 		{
 			$weeks  = ceil($days / 7);
 			$phrase = lang('Time.weeks', [abs($weeks)]);
 			$before = $days < 0;
 		}
-		else if ($days !== 0)
+		elseif ($days !== 0)
 		{
 			$before = $days < 0;
 
@@ -1199,12 +1212,12 @@ class Time extends DateTime
 
 			$phrase = lang('Time.days', [abs($days)]);
 		}
-		else if ($hours !== 0)
+		elseif ($hours !== 0)
 		{
-			// Display the actual time instead of a regular phrase.
-			return $this->format('g:i a');
+			$phrase = lang('Time.hours', [abs($hours)]);
+			$before = $hours < 0;
 		}
-		else if ($minutes !== 0)
+		elseif ($minutes !== 0)
 		{
 			$phrase = lang('Time.minutes', [abs($minutes)]);
 			$before = $minutes < 0;
@@ -1218,7 +1231,7 @@ class Time extends DateTime
 	}
 
 	/**
-	 * @param $testTime
+	 * @param mixed       $testTime
 	 * @param string|null $timezone
 	 *
 	 * @return \CodeIgniter\I18n\TimeDifference
@@ -1239,7 +1252,7 @@ class Time extends DateTime
 	/**
 	 * Returns a Time instance with the timezone converted to UTC.
 	 *
-	 * @param $time
+	 * @param mixed       $time
 	 * @param string|null $timezone
 	 *
 	 * @return \DateTime|static
@@ -1252,11 +1265,11 @@ class Time extends DateTime
 			$time = $time->toDateTime()
 					->setTimezone(new DateTimeZone('UTC'));
 		}
-		else if ($time instanceof DateTime)
+		elseif ($time instanceof DateTime)
 		{
 			$time = $time->setTimezone(new DateTimeZone('UTC'));
 		}
-		else if (is_string($time))
+		elseif (is_string($time))
 		{
 			$timezone = $timezone ?: $this->timezone;
 			$timezone = $timezone instanceof DateTimeZone ? $timezone : new DateTimeZone($timezone);
@@ -1327,7 +1340,7 @@ class Time extends DateTime
 	 * return values.
 	 * See http://php.net/manual/en/language.oop5.overloading.php
 	 *
-	 * @param $name
+	 * @param string $name
 	 *
 	 * @return mixed
 	 */
@@ -1348,7 +1361,7 @@ class Time extends DateTime
 	/**
 	 * Allow for property-type checking to any getX method...
 	 *
-	 * @param $name
+	 * @param string $name
 	 *
 	 * @return boolean
 	 */
@@ -1359,4 +1372,21 @@ class Time extends DateTime
 		return method_exists($this, $method);
 	}
 
+	//--------------------------------------------------------------------
+
+	/**
+	 * This is called when we unserialize the Time object.
+	 */
+	public function __wakeup()
+	{
+		/**
+		 * Prior to unserialization, this is a string.
+		 *
+		 * @var string $timezone
+		 */
+		$timezone = $this->timezone;
+
+		$this->timezone = new DateTimeZone($timezone);
+		parent::__construct($this->date, $this->timezone);
+	}
 }
