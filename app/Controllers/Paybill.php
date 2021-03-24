@@ -54,14 +54,16 @@ class Paybill extends AdminController
         $response = [
             'status'    => 'error',
             'title'     => 'Failed',
-            'message'   => 'Shortcode does not exist'
+            'message'   => 'You do not own this shortcode or it does not exist'
         ];
-        if($bs) {
+        if($bs && $bs->owner->id == $this->ionAuth->getUserId()) {
             $shortcode = $bs->shortcode;
             if(\Config\Database::connect()->table('businesses')->where('id', $bs->id)->delete()){
                 $connection = \Config\Database::connect();
                 @$connection->table('transactions')->where('shortcode', $shortcode)->delete();
                 @$connection->table('b2c')->where('shortcode', $shortcode)->delete();
+                @$connection->table('options')->like('meta_key', $shortcode.'_', 'before')->delete();
+
                 $response = [
                     'status'    => 'success',
                     'title'     => 'Shortcodes Deleted',

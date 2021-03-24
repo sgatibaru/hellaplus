@@ -1,10 +1,24 @@
-<?php namespace CodeIgniter\Commands\Cache;
+<?php
+
+/**
+ * This file is part of the CodeIgniter 4 framework.
+ *
+ * (c) CodeIgniter Foundation <admin@codeigniter.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace CodeIgniter\Commands\Cache;
 
 use CodeIgniter\Cache\CacheFactory;
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 use CodeIgniter\I18n\Time;
 
+/**
+ * Shows information on the cache.
+ */
 class InfoCache extends BaseCommand
 {
 	/**
@@ -26,23 +40,14 @@ class InfoCache extends BaseCommand
 	 *
 	 * @var string
 	 */
-	protected $description = 'Show info cache in the current system.';
+	protected $description = 'Shows file cache information in the current system.';
 
 	/**
 	 * the Command's usage
 	 *
 	 * @var string
 	 */
-	protected $usage = 'cache:info [driver]';
-
-	/**
-	 * the Command's Arguments
-	 *
-	 * @var array
-	 */
-	protected $arguments = [
-		'driver' => 'The cache driver to use',
-	];
+	protected $usage = 'cache:info';
 
 	/**
 	 * Clears the cache
@@ -54,25 +59,22 @@ class InfoCache extends BaseCommand
 		$config = config('Cache');
 		helper('number');
 
-		$handler = $params[0] ?? $config->handler;
-		if (! array_key_exists($handler, $config->validHandlers))
+		if ($config->handler !== 'file')
 		{
-			CLI::error($handler . ' is not a valid cache handler.');
+			CLI::error('This command only supports the file cache handler.');
+
 			return;
 		}
 
-		$config->handler = $handler;
-		$cache           = CacheFactory::getHandler($config);
-
+		$cache  = CacheFactory::getHandler($config);
 		$caches = $cache->getCacheInfo();
-
-		$tbody = [];
+		$tbody  = [];
 
 		foreach ($caches as $key => $field)
 		{
 			$tbody[] = [
 				$key,
-				$field['server_path'],
+				clean_path($field['server_path']),
 				number_to_size($field['size']),
 				Time::createFromTimestamp($field['date']),
 			];

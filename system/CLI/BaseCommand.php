@@ -1,55 +1,25 @@
 <?php
 
 /**
- * CodeIgniter
+ * This file is part of the CodeIgniter 4 framework.
  *
- * An open source application development framework for PHP
+ * (c) CodeIgniter Foundation <admin@codeigniter.com>
  *
- * This content is released under the MIT License (MIT)
- *
- * Copyright (c) 2014-2019 British Columbia Institute of Technology
- * Copyright (c) 2019-2020 CodeIgniter Foundation
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * @package    CodeIgniter
- * @author     CodeIgniter Dev Team
- * @copyright  2019-2020 CodeIgniter Foundation
- * @license    https://opensource.org/licenses/MIT	MIT License
- * @link       https://codeigniter.com
- * @since      Version 4.0.0
- * @filesource
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace CodeIgniter\CLI;
 
 use Psr\Log\LoggerInterface;
+use ReflectionException;
 use Throwable;
 
 /**
  * Class BaseCommand
- *
- * @package CodeIgniter\CLI
  */
 abstract class BaseCommand
 {
-
 	/**
 	 * The group the command is lumped under
 	 * when listing commands.
@@ -96,7 +66,7 @@ abstract class BaseCommand
 	/**
 	 * The Logger to use for a command
 	 *
-	 * @var \Psr\Log\LoggerInterface
+	 * @var LoggerInterface
 	 */
 	protected $logger;
 
@@ -104,7 +74,7 @@ abstract class BaseCommand
 	 * Instance of Commands so
 	 * commands can call other commands.
 	 *
-	 * @var \CodeIgniter\CLI\Commands
+	 * @var Commands
 	 */
 	protected $commands;
 
@@ -113,8 +83,8 @@ abstract class BaseCommand
 	/**
 	 * BaseCommand constructor.
 	 *
-	 * @param \Psr\Log\LoggerInterface  $logger
-	 * @param \CodeIgniter\CLI\Commands $commands
+	 * @param LoggerInterface $logger
+	 * @param Commands        $commands
 	 */
 	public function __construct(LoggerInterface $logger, Commands $commands)
 	{
@@ -141,7 +111,7 @@ abstract class BaseCommand
 	 * @param array  $params
 	 *
 	 * @return mixed
-	 * @throws \ReflectionException
+	 * @throws ReflectionException
 	 */
 	protected function call(string $command, array $params = [])
 	{

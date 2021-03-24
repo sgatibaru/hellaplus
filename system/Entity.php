@@ -1,51 +1,28 @@
 <?php
 
 /**
- * CodeIgniter
+ * This file is part of the CodeIgniter 4 framework.
  *
- * An open source application development framework for PHP
+ * (c) CodeIgniter Foundation <admin@codeigniter.com>
  *
- * This content is released under the MIT License (MIT)
- *
- * Copyright (c) 2014-2019 British Columbia Institute of Technology
- * Copyright (c) 2019-2020 CodeIgniter Foundation
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * @package    CodeIgniter
- * @author     CodeIgniter Dev Team
- * @copyright  2019-2020 CodeIgniter Foundation
- * @license    https://opensource.org/licenses/MIT	MIT License
- * @link       https://codeigniter.com
- * @since      Version 4.0.0
- * @filesource
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace CodeIgniter;
 
 use CodeIgniter\Exceptions\CastException;
 use CodeIgniter\I18n\Time;
+use DateTime;
+use Exception;
+use JsonSerializable;
+use ReflectionException;
+use stdClass;
 
 /**
  * Entity encapsulation, for use with CodeIgniter\Model
  */
-class Entity implements \JsonSerializable
+class Entity implements JsonSerializable
 {
 	/**
 	 * Maps names used in sets and gets against unique
@@ -113,7 +90,7 @@ class Entity implements \JsonSerializable
 	 *
 	 * @param array $data
 	 *
-	 * @return \CodeIgniter\Entity
+	 * @return $this
 	 */
 	public function fill(array $data = null)
 	{
@@ -143,7 +120,7 @@ class Entity implements \JsonSerializable
 	 * @param boolean $recursive   If true, inner entities will be casted as array as well.
 	 *
 	 * @return array
-	 * @throws \Exception
+	 * @throws Exception
 	 */
 	public function toArray(bool $onlyChanged = false, bool $cast = true, bool $recursive = false): array
 	{
@@ -306,7 +283,7 @@ class Entity implements \JsonSerializable
 	 * @param string $key
 	 *
 	 * @return mixed
-	 * @throws \Exception
+	 * @throws Exception
 	 */
 	public function __get(string $key)
 	{
@@ -325,7 +302,7 @@ class Entity implements \JsonSerializable
 
 		// Otherwise return the protected property
 		// if it exists.
-		else if (array_key_exists($key, $this->attributes))
+		elseif (array_key_exists($key, $this->attributes))
 		{
 			$result = $this->attributes[$key];
 		}
@@ -336,7 +313,7 @@ class Entity implements \JsonSerializable
 			$result = $this->mutateDate($result);
 		}
 		// Or cast it as something?
-		else if ($this->_cast && ! empty($this->casts[$key]))
+		elseif ($this->_cast && ! empty($this->casts[$key]))
 		{
 			$result = $this->castAs($result, $this->casts[$key]);
 		}
@@ -355,11 +332,11 @@ class Entity implements \JsonSerializable
 	 *      $this->my_property = $p;
 	 *      $this->setMyProperty() = $p;
 	 *
-	 * @param string $key
-	 * @param null   $value
+	 * @param string     $key
+	 * @param mixed|null $value
 	 *
 	 * @return $this
-	 * @throws \Exception
+	 * @throws Exception
 	 */
 	public function __set(string $key, $value = null)
 	{
@@ -382,6 +359,12 @@ class Entity implements \JsonSerializable
 
 		if (! $isNullable || ! is_null($value))
 		{
+			// CSV casts need to be imploded.
+			if ($castTo === 'csv')
+			{
+				$value = implode(',', $value);
+			}
+
 			// Array casting requires that we serialize the value
 			// when setting it so that it can easily be stored
 			// back to the database.
@@ -433,7 +416,7 @@ class Entity implements \JsonSerializable
 	 *
 	 * @param string $key
 	 *
-	 * @throws \ReflectionException
+	 * @throws ReflectionException
 	 */
 	public function __unset(string $key)
 	{
@@ -510,8 +493,8 @@ class Entity implements \JsonSerializable
 	 *
 	 * @param mixed $value
 	 *
-	 * @return \CodeIgniter\I18n\Time|mixed
-	 * @throws \Exception
+	 * @return Time|mixed
+	 * @throws Exception
 	 */
 	protected function mutateDate($value)
 	{
@@ -520,7 +503,7 @@ class Entity implements \JsonSerializable
 			return $value;
 		}
 
-		if ($value instanceof \DateTime)
+		if ($value instanceof DateTime)
 		{
 			return Time::instance($value);
 		}
@@ -548,9 +531,8 @@ class Entity implements \JsonSerializable
 	 * @param string $type
 	 *
 	 * @return mixed
-	 * @throws \Exception
+	 * @throws Exception
 	 */
-
 	protected function castAs($value, string $type)
 	{
 		if (strpos($type, '?') === 0)
@@ -565,24 +547,27 @@ class Entity implements \JsonSerializable
 		switch($type)
 		{
 			case 'int':
-			case 'integer': //alias for 'integer'
-				$value = (int)$value;
+			case 'integer': // alias for 'integer'
+				$value = (int) $value;
 				break;
 			case 'float':
-				$value = (float)$value;
+				$value = (float) $value;
 				break;
 			case 'double':
-				$value = (double)$value;
+				$value = (double) $value;
 				break;
 			case 'string':
-				$value = (string)$value;
+				$value = (string) $value;
 				break;
 			case 'bool':
-			case 'boolean': //alias for 'boolean'
-				$value = (bool)$value;
+			case 'boolean': // alias for 'boolean'
+				$value = (bool) $value;
+				break;
+			case 'csv':
+				$value = explode(',', $value);
 				break;
 			case 'object':
-				$value = (object)$value;
+				$value = (object) $value;
 				break;
 			case 'array':
 				if (is_string($value) && (strpos($value, 'a:') === 0 || strpos($value, 's:') === 0))
@@ -590,7 +575,7 @@ class Entity implements \JsonSerializable
 					$value = unserialize($value);
 				}
 
-				$value = (array)$value;
+				$value = (array) $value;
 				break;
 			case 'json':
 				$value = $this->castAsJson($value);
@@ -616,11 +601,11 @@ class Entity implements \JsonSerializable
 	 * @param boolean $asArray
 	 *
 	 * @return mixed
-	 * @throws \CodeIgniter\Exceptions\CastException
+	 * @throws CastException
 	 */
 	private function castAsJson($value, bool $asArray = false)
 	{
-		$tmp = ! is_null($value) ? ($asArray ? [] : new \stdClass) : null;
+		$tmp = ! is_null($value) ? ($asArray ? [] : new stdClass) : null;
 		if (function_exists('json_decode'))
 		{
 			if ((is_string($value) && strlen($value) > 1 && in_array($value[0], ['[', '{', '"'], true)) || is_numeric($value))
@@ -640,10 +625,26 @@ class Entity implements \JsonSerializable
 	 * Support for json_encode()
 	 *
 	 * @return array|mixed
-	 * @throws \Exception
+	 * @throws Exception
 	 */
 	public function jsonSerialize()
 	{
 		return $this->toArray();
+	}
+
+	/**
+	 * Change the value of the private $_cast property
+	 *
+	 * @param  boolean|null $cast
+	 * @return boolean|Entity
+	 */
+	public function cast(bool $cast = null)
+	{
+		if (null === $cast)
+		{
+			return $this->_cast;
+		}
+		$this->_cast = $cast;
+		return $this;
 	}
 }

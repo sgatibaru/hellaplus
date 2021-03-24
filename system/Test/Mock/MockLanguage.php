@@ -1,10 +1,20 @@
-<?php namespace CodeIgniter\Test\Mock;
+<?php
+
+/**
+ * This file is part of the CodeIgniter 4 framework.
+ *
+ * (c) CodeIgniter Foundation <admin@codeigniter.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace CodeIgniter\Test\Mock;
 
 use CodeIgniter\Language\Language;
 
 class MockLanguage extends Language
 {
-
 	/**
 	 * Stores the data that should be
 	 * returned by the 'requireFile()' method.
@@ -57,5 +67,4 @@ class MockLanguage extends Language
 	{
 		$this->intlSupport = false;
 	}
-
 }

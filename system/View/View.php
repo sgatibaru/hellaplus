@@ -1,56 +1,30 @@
 <?php
 
 /**
- * CodeIgniter
+ * This file is part of the CodeIgniter 4 framework.
  *
- * An open source application development framework for PHP
+ * (c) CodeIgniter Foundation <admin@codeigniter.com>
  *
- * This content is released under the MIT License (MIT)
- *
- * Copyright (c) 2014-2019 British Columbia Institute of Technology
- * Copyright (c) 2019-2020 CodeIgniter Foundation
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * @package    CodeIgniter
- * @author     CodeIgniter Dev Team
- * @copyright  2019-2020 CodeIgniter Foundation
- * @license    https://opensource.org/licenses/MIT	MIT License
- * @link       https://codeigniter.com
- * @since      Version 4.0.0
- * @filesource
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace CodeIgniter\View;
 
+use CodeIgniter\Autoloader\FileLocator;
+use CodeIgniter\Debug\Toolbar\Collectors\Views;
 use CodeIgniter\View\Exceptions\ViewException;
 use Config\Services;
+use Config\Toolbar;
+use Config\View as ViewConfig;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Class View
- *
- * @package CodeIgniter\View
  */
 class View implements RendererInterface
 {
-
 	/**
 	 * Data that is made available to the Views.
 	 *
@@ -82,7 +56,7 @@ class View implements RendererInterface
 	 * we need to attempt to find a view
 	 * that's not in standard place.
 	 *
-	 * @var \CodeIgniter\Autoloader\FileLocator
+	 * @var FileLocator
 	 */
 	protected $loader;
 
@@ -109,7 +83,7 @@ class View implements RendererInterface
 	protected $performanceData = [];
 
 	/**
-	 * @var \Config\View
+	 * @var ViewConfig
 	 */
 	protected $config;
 
@@ -150,40 +124,40 @@ class View implements RendererInterface
 	 */
 	protected $currentSection;
 
-	//--------------------------------------------------------------------
-
 	/**
 	 * Constructor
 	 *
-	 * @param \Config\View                             $config
-	 * @param string|null                              $viewPath
-	 * @param \CodeIgniter\Autoloader\FileLocator|null $loader
-	 * @param boolean|null                             $debug
-	 * @param \Psr\Log\LoggerInterface                 $logger
+	 * @param ViewConfig       $config
+	 * @param string|null      $viewPath
+	 * @param FileLocator|null $loader
+	 * @param boolean|null     $debug
+	 * @param LoggerInterface  $logger
 	 */
-	public function __construct($config, string $viewPath = null, $loader = null, bool $debug = null, LoggerInterface $logger = null)
+	public function __construct(ViewConfig $config, string $viewPath = null, FileLocator $loader = null, bool $debug = null, LoggerInterface $logger = null)
 	{
 		$this->config   = $config;
 		$this->viewPath = rtrim($viewPath, '\\/ ') . DIRECTORY_SEPARATOR;
 		$this->loader   = $loader ?? Services::locator();
 		$this->logger   = $logger ?? Services::logger();
 		$this->debug    = $debug ?? CI_DEBUG;
-		$this->saveData = $config->saveData ?? null;
+		$this->saveData = (bool) $config->saveData;
 	}
-
-	//--------------------------------------------------------------------
 
 	/**
 	 * Builds the output based upon a file name and any
 	 * data that has already been set.
 	 *
 	 * Valid $options:
-	 *     - cache 		number of seconds to cache for
-	 *  - cache_name	Name to use for cache
+	 *  - cache      Number of seconds to cache for
+	 *  - cache_name Name to use for cache
 	 *
-	 * @param string  $view
-	 * @param array   $options
-	 * @param boolean $saveData
+	 * @param string       $view     File name of the view source
+	 * @param array|null   $options  Reserved for 3rd-party uses since
+	 *                               it might be needed to pass additional info
+	 *                               to other template engines.
+	 * @param boolean|null $saveData If true, saves data for subsequent calls,
+	 *                               if false, cleans the data after displaying,
+	 *                               if null, uses the config setting.
 	 *
 	 * @return string
 	 */
@@ -198,16 +172,20 @@ class View implements RendererInterface
 		$fileExt                     = pathinfo($view, PATHINFO_EXTENSION);
 		$realPath                    = empty($fileExt) ? $view . '.php' : $view; // allow Views as .html, .tpl, etc (from CI3)
 		$this->renderVars['view']    = $realPath;
-		$this->renderVars['options'] = $options;
+		$this->renderVars['options'] = $options ?? [];
 
 		// Was it cached?
 		if (isset($this->renderVars['options']['cache']))
 		{
-			$this->renderVars['cacheName'] = $this->renderVars['options']['cache_name'] ?? str_replace('.php', '', $this->renderVars['view']);
+			$cacheName = $this->renderVars['options']['cache_name'] ?? str_replace('.php', '', $this->renderVars['view']);
+			$cacheName = str_replace(['\\', '/'], '', $cacheName);
+
+			$this->renderVars['cacheName'] = $cacheName;
 
 			if ($output = cache($this->renderVars['cacheName']))
 			{
 				$this->logPerformance($this->renderVars['start'], microtime(true), $this->renderVars['view']);
+
 				return $output;
 			}
 		}
@@ -227,7 +205,6 @@ class View implements RendererInterface
 
 		// Make our view data available to the view.
 		$this->tempData = $this->tempData ?? $this->data;
-		extract($this->tempData);
 
 		if ($saveData)
 		{
@@ -237,10 +214,12 @@ class View implements RendererInterface
 		// Save current vars
 		$renderVars = $this->renderVars;
 
-		ob_start();
-		include $this->renderVars['file']; // PHP will be processed
-		$output = ob_get_contents();
-		@ob_end_clean();
+		$output = (function (): string {
+			extract($this->tempData);
+			ob_start();
+			include $this->renderVars['file'];
+			return ob_get_clean() ?: '';
+		})();
 
 		// Get back current vars
 		$this->renderVars = $renderVars;
@@ -261,16 +240,19 @@ class View implements RendererInterface
 
 		$this->logPerformance($this->renderVars['start'], microtime(true), $this->renderVars['view']);
 
-              if (($this->debug && (! isset($options['debug']) || $options['debug'] === true)) && in_array('CodeIgniter\Filters\DebugToolbar', service('filters')->getFiltersClass()['after'], true))
+		if (($this->debug && (! isset($options['debug']) || $options['debug'] === true))
+			&& in_array('CodeIgniter\Filters\DebugToolbar', service('filters')->getFiltersClass()['after'], true)
+		)
 		{
-			$toolbarCollectors = config(\Config\Toolbar::class)->collectors;
+			$toolbarCollectors = config(Toolbar::class)->collectors;
 
-			if (in_array(\CodeIgniter\Debug\Toolbar\Collectors\Views::class, $toolbarCollectors, true))
+			if (in_array(Views::class, $toolbarCollectors, true))
 			{
 				// Clean up our path names to make them a little cleaner
 				$this->renderVars['file'] = clean_path($this->renderVars['file']);
 				$this->renderVars['file'] = ++$this->viewsCount . ' ' . $this->renderVars['file'];
-				$output                   = '<!-- DEBUG-VIEW START ' . $this->renderVars['file'] . ' -->' . PHP_EOL
+
+				$output = '<!-- DEBUG-VIEW START ' . $this->renderVars['file'] . ' -->' . PHP_EOL
 					. $output . PHP_EOL
 					. '<!-- DEBUG-VIEW ENDED ' . $this->renderVars['file'] . ' -->' . PHP_EOL;
 			}
@@ -287,20 +269,18 @@ class View implements RendererInterface
 		return $output;
 	}
 
-	//--------------------------------------------------------------------
-
 	/**
 	 * Builds the output based upon a string and any
 	 * data that has already been set.
 	 * Cache does not apply, because there is no "key".
 	 *
-	 * @param string  $view     The view contents
-	 * @param array   $options  Reserved for 3rd-party uses since
-	 *                          it might be needed to pass additional info
-	 *                          to other template engines.
-	 * @param boolean $saveData If true, will save data for use with any other calls,
-	 *                          if false, will clean the data after displaying the view,
-	 *                             if not specified, use the config setting.
+	 * @param string       $view     The view contents
+	 * @param array|null   $options  Reserved for 3rd-party uses since
+	 *                               it might be needed to pass additional info
+	 *                               to other template engines.
+	 * @param boolean|null $saveData If true, saves data for subsequent calls,
+	 *                               if false, cleans the data after displaying,
+	 *                               if null, uses the config setting.
 	 *
 	 * @return string
 	 */
@@ -310,27 +290,23 @@ class View implements RendererInterface
 		$saveData       = $saveData ?? $this->saveData;
 		$this->tempData = $this->tempData ?? $this->data;
 
-		extract($this->tempData);
-
 		if ($saveData)
 		{
 			$this->data = $this->tempData;
 		}
 
-		ob_start();
-		$incoming = '?>' . $view;
-		eval($incoming);
-		$output = ob_get_contents();
-		@ob_end_clean();
+		$output = (function (string $view): string {
+			extract($this->tempData);
+			ob_start();
+			eval('?>' . $view);
+			return ob_get_clean() ?: '';
+		})($view);
 
 		$this->logPerformance($start, microtime(true), $this->excerpt($view));
-
 		$this->tempData = null;
 
 		return $output;
 	}
-
-	//--------------------------------------------------------------------
 
 	/**
 	 * Extract first bit of a long string and add ellipsis
@@ -343,8 +319,6 @@ class View implements RendererInterface
 	{
 		return (strlen($string) > $length) ? substr($string, 0, $length - 3) . '...' : $string;
 	}
-
-	//--------------------------------------------------------------------
 
 	/**
 	 * Sets several pieces of view data at once.
@@ -367,8 +341,6 @@ class View implements RendererInterface
 
 		return $this;
 	}
-
-	//--------------------------------------------------------------------
 
 	/**
 	 * Sets a single piece of view data.
@@ -393,8 +365,6 @@ class View implements RendererInterface
 		return $this;
 	}
 
-	//--------------------------------------------------------------------
-
 	/**
 	 * Removes all of the view data from the system.
 	 *
@@ -407,8 +377,6 @@ class View implements RendererInterface
 		return $this;
 	}
 
-	//--------------------------------------------------------------------
-
 	/**
 	 * Returns the current data that will be displayed in the view.
 	 *
@@ -418,8 +386,6 @@ class View implements RendererInterface
 	{
 		return $this->tempData ?? $this->data;
 	}
-
-	//--------------------------------------------------------------------
 
 	/**
 	 * Specifies that the current view should extend an existing layout.
@@ -433,8 +399,6 @@ class View implements RendererInterface
 		$this->layout = $layout;
 	}
 
-	//--------------------------------------------------------------------
-
 	/**
 	 * Starts holds content for a section within the layout.
 	 *
@@ -447,12 +411,8 @@ class View implements RendererInterface
 		ob_start();
 	}
 
-	//--------------------------------------------------------------------
-
 	/**
-	 *
-	 *
-	 * @throws \Laminas\Escaper\Exception\RuntimeException
+	 * @throws RuntimeException
 	 */
 	public function endSection()
 	{
@@ -460,7 +420,7 @@ class View implements RendererInterface
 
 		if (empty($this->currentSection))
 		{
-			throw new \RuntimeException('View themes, no current section.');
+			throw new RuntimeException('View themes, no current section.');
 		}
 
 		// Ensure an array exists so we can store multiple entries for this.
@@ -472,8 +432,6 @@ class View implements RendererInterface
 
 		$this->currentSection = null;
 	}
-
-	//--------------------------------------------------------------------
 
 	/**
 	 * Renders a section's contents.
@@ -496,8 +454,6 @@ class View implements RendererInterface
 		}
 	}
 
-	//--------------------------------------------------------------------
-
 	/**
 	 * Used within layout views to include additional views.
 	 *
@@ -512,8 +468,6 @@ class View implements RendererInterface
 		return $this->render($view, $options, $saveData);
 	}
 
-	//--------------------------------------------------------------------
-
 	/**
 	 * Returns the performance data that might have been collected
 	 * during the execution. Used primarily in the Debug Toolbar.
@@ -524,8 +478,6 @@ class View implements RendererInterface
 	{
 		return $this->performanceData;
 	}
-
-	//--------------------------------------------------------------------
 
 	/**
 	 * Logs performance data for rendering a view.
@@ -547,6 +499,4 @@ class View implements RendererInterface
 			];
 		}
 	}
-
-	//--------------------------------------------------------------------
 }

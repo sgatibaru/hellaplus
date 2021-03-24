@@ -59,7 +59,7 @@ class Settings extends AdminController
 
     public function shortcodes() {
         $bs = new BusinessModel();
-        $this->data['shortcodes'] = $bs->findAll();
+        $this->data['shortcodes'] = $bs->where('user', $this->ionAuth->getUserId())->findAll();
         return $this->_renderPage('admin/shortcodes', $this->data);
     }
 }

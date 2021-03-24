@@ -78,63 +78,71 @@ class Api extends BaseController
     public function confirm($shortcode, $key){
         $data = file_get_contents('php://input');
 
-        if($data = json_decode($data)) {
-            $to_db = [
-                'shortcode'     => $shortcode,
-                'date'          => date('m-d-Y'),
-                'trans_id'      => $data->TransID,
-                'trans_amount'  => $data->TransAmount,
-                'ref_number'    => $data->BillRefNumber,
-                'org_balance'   => $data->OrgAccountBalance,
-                'thirdparty_id' => $data->ThirdPartyTransID,
-                'msisdn'        => $data->MSISDN,
-                'fname'         => $data->FirstName,
-                'mname'         => $data->MiddleName,
-                'lname'         => $data->LastName,
-                'trans_time'    => $data->TransTime,
-                'trans_type'    => 'income'
-            ];
-
-            if($this->db->table('transactions')->insert($to_db)) {
-                $response = [
-                    'ResultCode' => 0,
-                    'ResultDesc' => 'Confirmation received successfully'
-                ];
-                $owner = (new BusinessModel())->where('shortcode', $shortcode)->first();
-                $customer = [
-                    'phone'     => $data->MSISDN,
+        if ($key == md5(trim($shortcode))) {
+            if($data = json_decode($data)) {
+                $to_db = [
+                    'shortcode'     => $shortcode,
+                    'date'          => date('m-d-Y'),
+                    'trans_id'      => $data->TransID,
+                    'trans_amount'  => $data->TransAmount,
+                    'ref_number'    => $data->BillRefNumber,
+                    'org_balance'   => $data->OrgAccountBalance,
+                    'thirdparty_id' => $data->ThirdPartyTransID,
+                    'msisdn'        => $data->MSISDN,
                     'fname'         => $data->FirstName,
                     'mname'         => $data->MiddleName,
                     'lname'         => $data->LastName,
-                    'business'      => !empty($owner) ? $owner->id : ''
+                    'trans_time'    => $data->TransTime,
+                    'trans_type'    => 'income'
                 ];
-                if(!(new \App\Models\CustomerModel())->where('phone', $data->MSISDN)->get()->getRowObject()) {
-                    \Config\Database::connect()->table('customers')->insert($customer);
-                }
-                //Get the owner
-                $o_id = 'NONE';
-                if($owner) {
-                    $o_id = $owner->id;
-                }
-                if(get_option($o_id.'_sms_active', get_parent_option('sms_api', 'sms_active', false)) == 1) {
-                    if($template = get_option($o_id.'_sms_template', get_parent_option('sms_api', 'sms_template', FALSE))) {
-                        $message = \Config\Services::parser()->setData((array)$data)->renderString($template);
-                        (new \App\Libraries\SMS())->send_sms($data->MSISDN, $message, $owner);
+
+                if($this->db->table('transactions')->insert($to_db)) {
+                    $response = [
+                        'ResultCode' => 0,
+                        'ResultDesc' => 'Confirmation received successfully'
+                    ];
+                    $owner = (new BusinessModel())->where('shortcode', $shortcode)->first();
+                    $customer = [
+                        'phone'     => $data->MSISDN,
+                        'fname'         => $data->FirstName,
+                        'mname'         => $data->MiddleName,
+                        'lname'         => $data->LastName,
+                        'business'      => !empty($owner) ? $owner->id : ''
+                    ];
+                    if(!(new \App\Models\CustomerModel())->where('phone', $data->MSISDN)->get()->getRowObject()) {
+                        \Config\Database::connect()->table('customers')->insert($customer);
                     }
+                    //Get the owner
+                    $o_id = 'NONE';
+                    if($owner) {
+                        $o_id = $owner->id;
+                    }
+                    if(get_option($o_id.'_sms_active', get_parent_option('sms_api', 'sms_active', false)) == 1) {
+                        if($template = get_option($o_id.'_sms_template', get_parent_option('sms_api', 'sms_template', FALSE))) {
+                            $message = \Config\Services::parser()->setData((array)$data)->renderString($template);
+                            (new \App\Libraries\SMS())->send_sms($data->MSISDN, $message, $owner);
+                        }
+                    }
+                    @\Config\Database::connect()->table('businesses')->where('shortcode', $shortcode)->update(['api_setup'=>1]);
+                } else {
+                    $response = [
+                        'ResultCode' => 501,
+                        'ResultDesc' => 'Database error'
+                    ];
                 }
-                @\Config\Database::connect()->table('businesses')->where('shortcode', $shortcode)->update(['api_setup'=>1]);
             } else {
                 $response = [
-                    'ResultCode' => 501,
-                    'ResultDesc' => 'Database error'
+                    'ResultCode' => 403,
+                    'ResultDesc' => 'Invalid Request'
                 ];
             }
         } else {
             $response = [
                 'ResultCode' => 403,
-                'ResultDesc' => 'Invalid Request'
+                'ResultDesc' => 'Unauthorized'
             ];
         }
+
         return $this->response->setContentType('application/json')->setBody(json_encode($response));
     }
 

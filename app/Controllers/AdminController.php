@@ -9,7 +9,7 @@ use Config\Services;
 class AdminController extends BaseController
 {
     /** @var IonAuth */
-    private $ionAuth;
+    public $ionAuth;
     /**
      * @var Session
      */

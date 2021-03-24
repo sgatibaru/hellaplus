@@ -1,54 +1,27 @@
 <?php
+
 /**
- * CodeIgniter
+ * This file is part of the CodeIgniter 4 framework.
  *
- * An open source application development framework for PHP
+ * (c) CodeIgniter Foundation <admin@codeigniter.com>
  *
- * This content is released under the MIT License (MIT)
- *
- * Copyright (c) 2014-2019 British Columbia Institute of Technology
- * Copyright (c) 2019-2020 CodeIgniter Foundation
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * @package    CodeIgniter
- * @author     CodeIgniter Dev Team
- * @copyright  2019-2020 CodeIgniter Foundation
- * @license    https://opensource.org/licenses/MIT	MIT License
- * @link       https://codeigniter.com
- * @since      Version 4.0.0
- * @filesource
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace CodeIgniter\Database\SQLite3;
 
+use Closure;
 use CodeIgniter\Database\BaseResult;
 use CodeIgniter\Database\Exceptions\DatabaseException;
-use CodeIgniter\Database\ResultInterface;
 use CodeIgniter\Entity;
+use stdClass;
 
 /**
  * Result for SQLite3
  */
-class Result extends BaseResult implements ResultInterface
+class Result extends BaseResult
 {
-
 	/**
 	 * Gets the number of fields in the result set.
 	 *
@@ -86,7 +59,7 @@ class Result extends BaseResult implements ResultInterface
 	 */
 	public function getFieldData(): array
 	{
-		static $data_types = [
+		static $dataTypes = [
 			SQLITE3_INTEGER => 'integer',
 			SQLITE3_FLOAT   => 'float',
 			SQLITE3_TEXT    => 'text',
@@ -99,11 +72,11 @@ class Result extends BaseResult implements ResultInterface
 
 		for ($i = 0, $c = $this->getFieldCount(); $i < $c; $i ++)
 		{
-			$retVal[$i]             = new \stdClass();
+			$retVal[$i]             = new stdClass();
 			$retVal[$i]->name       = $this->resultID->columnName($i); // @phpstan-ignore-line
 			$type                   = $this->resultID->columnType($i); // @phpstan-ignore-line
 			$retVal[$i]->type       = $type;
-			$retVal[$i]->type_name  = isset($data_types[$type]) ? $data_types[$type] : null;
+			$retVal[$i]->type_name  = isset($dataTypes[$type]) ? $dataTypes[$type] : null;
 			$retVal[$i]->max_length = null;
 			$retVal[$i]->length     = null;
 		}
@@ -138,7 +111,7 @@ class Result extends BaseResult implements ResultInterface
 	 * @param integer $n
 	 *
 	 * @return mixed
-	 * @throws \CodeIgniter\Database\Exceptions\DatabaseException
+	 * @throws DatabaseException
 	 */
 	public function dataSeek(int $n = 0)
 	{
@@ -195,7 +168,7 @@ class Result extends BaseResult implements ResultInterface
 			return $classObj->setAttributes($row);
 		}
 
-		$classSet = \Closure::bind(function ($key, $value) {
+		$classSet = Closure::bind(function ($key, $value) {
 			$this->$key = $value;
 		}, $classObj, $className
 		);

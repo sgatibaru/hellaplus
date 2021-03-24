@@ -1,45 +1,21 @@
 <?php
+
 /**
- * CodeIgniter
+ * This file is part of the CodeIgniter 4 framework.
  *
- * An open source application development framework for PHP
+ * (c) CodeIgniter Foundation <admin@codeigniter.com>
  *
- * This content is released under the MIT License (MIT)
- *
- * Copyright (c) 2014-2019 British Columbia Institute of Technology
- * Copyright (c) 2019-2020 CodeIgniter Foundation
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * @package    CodeIgniter
- * @author     CodeIgniter Dev Team
- * @copyright  2019-2020 CodeIgniter Foundation
- * @license    https://opensource.org/licenses/MIT	MIT License
- * @link       https://codeigniter.com
- * @since      Version 4.0.0
- * @filesource
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace CodeIgniter\Session;
 
 use CodeIgniter\Session\Exceptions\SessionException;
+use Config\App;
 use Psr\Log\LoggerAwareTrait;
+use Psr\Log\LoggerInterface;
+use SessionHandlerInterface;
 
 /**
  * Implementation of CodeIgniter session container.
@@ -49,13 +25,12 @@ use Psr\Log\LoggerAwareTrait;
  */
 class Session implements SessionInterface
 {
-
 	use LoggerAwareTrait;
 
 	/**
 	 * Instance of the driver to use.
 	 *
-	 * @var \SessionHandlerInterface
+	 * @var SessionHandlerInterface
 	 */
 	protected $driver;
 
@@ -150,7 +125,7 @@ class Session implements SessionInterface
 	 * Cookie SameSite setting as described in RFC6265
 	 * Must be 'None', 'Lax' or 'Strict'.
 	 *
-	 * @var string
+	 * @var string 'Lax'|'None'|'Strict'
 	 */
 	protected $cookieSameSite = 'Lax';
 
@@ -164,7 +139,7 @@ class Session implements SessionInterface
 	/**
 	 * Logger instance to record error messages and warnings.
 	 *
-	 * @var \Psr\Log\LoggerInterface
+	 * @var LoggerInterface
 	 */
 	protected $logger;
 
@@ -175,10 +150,10 @@ class Session implements SessionInterface
 	 *
 	 * Extract configuration settings and save them here.
 	 *
-	 * @param \SessionHandlerInterface $driver
-	 * @param \Config\App              $config
+	 * @param SessionHandlerInterface $driver
+	 * @param App                     $config
 	 */
-	public function __construct(\SessionHandlerInterface $driver, $config)
+	public function __construct(SessionHandlerInterface $driver, $config)
 	{
 		$this->driver = $driver;
 
@@ -251,15 +226,16 @@ class Session implements SessionInterface
 		$this->startSession();
 
 		// Is session ID auto-regeneration configured? (ignoring ajax requests)
-		if ((empty($_SERVER['HTTP_X_REQUESTED_WITH']) ||
-				strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') && ($regenerate_time = $this->sessionTimeToUpdate) > 0
+		if ((empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+			|| strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest')
+			&& ($regenerateTime = $this->sessionTimeToUpdate) > 0
 		)
 		{
 			if (! isset($_SESSION['__ci_last_regenerate']))
 			{
 				$_SESSION['__ci_last_regenerate'] = time();
 			}
-			elseif ($_SESSION['__ci_last_regenerate'] < (time() - $regenerate_time))
+			elseif ($_SESSION['__ci_last_regenerate'] < (time() - $regenerateTime))
 			{
 				$this->regenerate((bool) $this->sessionRegenerateDestroy);
 			}
@@ -393,22 +369,24 @@ class Session implements SessionInterface
 	 */
 	protected function configureSidLength()
 	{
-		$bits_per_character = (int) (ini_get('session.sid_bits_per_character') !== false
+		$bitsPerCharacter = (int) (ini_get('session.sid_bits_per_character') !== false
 			? ini_get('session.sid_bits_per_character')
 			: 4);
-		$sid_length         = (int) (ini_get('session.sid_length') !== false
+
+		$sidLength = (int) (ini_get('session.sid_length') !== false
 			? ini_get('session.sid_length')
 			: 40);
-		if (($sid_length * $bits_per_character) < 160)
+
+		if (($sidLength * $bitsPerCharacter) < 160)
 		{
-			$bits = ($sid_length * $bits_per_character);
+			$bits = ($sidLength * $bitsPerCharacter);
 			// Add as many more characters as necessary to reach at least 160 bits
-			$sid_length += (int) ceil((160 % $bits) / $bits_per_character);
-			ini_set('session.sid_length', (string) $sid_length);
+			$sidLength += (int) ceil((160 % $bits) / $bitsPerCharacter);
+			ini_set('session.sid_length', (string) $sidLength);
 		}
 
 		// Yes, 4,5,6 are the only known possible values as of 2016-10-27
-		switch ($bits_per_character)
+		switch ($bitsPerCharacter)
 		{
 			case 4:
 				$this->sidRegexp = '[0-9a-f]';
@@ -421,7 +399,7 @@ class Session implements SessionInterface
 				break;
 		}
 
-		$this->sidRegexp .= '{' . $sid_length . '}';
+		$this->sidRegexp .= '{' . $sidLength . '}';
 	}
 
 	//--------------------------------------------------------------------
@@ -439,7 +417,7 @@ class Session implements SessionInterface
 			return;
 		}
 
-		$current_time = time();
+		$currentTime = time();
 
 		foreach ($_SESSION['__ci_vars'] as $key => &$value)
 		{
@@ -447,9 +425,8 @@ class Session implements SessionInterface
 			{
 				$_SESSION['__ci_vars'][$key] = 'old';
 			}
-			// Hacky, but 'old' will (implicitly) always be less than time() ;)
 			// DO NOT move this above the 'new' check!
-			elseif ($value < $current_time)
+			elseif ($value === 'old' || $value < $currentTime)
 			{
 				unset($_SESSION[$key], $_SESSION['__ci_vars'][$key]);
 			}
@@ -502,7 +479,7 @@ class Session implements SessionInterface
 	 * to be set as session properties.
 	 *
 	 * @param string|array $data  Property name or associative array of properties
-	 * @param string|array $value Property value if single key provided
+	 * @param mixed        $value Property value if single key provided
 	 */
 	public function set($data, $value = null)
 	{
@@ -537,8 +514,8 @@ class Session implements SessionInterface
 	 *
 	 * Replaces the legacy method $session->userdata();
 	 *
-	 * @param  string $key Identifier of the session property to retrieve
-	 * @return array|null	The property value(s)
+	 * @param  string|null $key Identifier of the session property to retrieve
+	 * @return mixed	The property value(s)
 	 */
 	public function get(string $key = null)
 	{
@@ -590,14 +567,14 @@ class Session implements SessionInterface
 
 	   //--------------------------------------------------------------------
 
-	  /**
-	   * Push new value onto session value that is array.
-	   *
-	   * @param string $key  Identifier of the session property we are interested in.
-	   * @param array  $data value to be pushed to existing session key.
-	   *
-	   * @return void
-	   */
+	/**
+	 * Push new value onto session value that is array.
+	 *
+	 * @param string $key  Identifier of the session property we are interested in.
+	 * @param array  $data value to be pushed to existing session key.
+	 *
+	 * @return void
+	 */
 	public function push(string $key, array $data)
 	{
 		if ($this->has($key) && is_array($value = $this->get($key)))
@@ -720,7 +697,7 @@ class Session implements SessionInterface
 	 * If the item key is null, return all flashdata.
 	 *
 	 * @param  string $key Property identifier
-	 * @return array|null	The requested property value, or an associative array  of them
+	 * @return array|null	The requested property value, or an associative array of them
 	 */
 	public function getFlashdata(string $key = null)
 	{
@@ -1093,11 +1070,8 @@ class Session implements SessionInterface
 				$params['samesite'] = $this->cookieSameSite;
 			}
 
-			setcookie(
-				$this->sessionCookieName,
-				session_id(),
-				$params
-			);
+			// @phpstan-ignore-next-line @todo ignore to be removed in 4.1 with rector 0.9
+			setcookie($this->sessionCookieName, session_id(), $params);
 		}
 	}
 

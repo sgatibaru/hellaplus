@@ -204,7 +204,7 @@ $active_business = active_business();
             <img src="<?php echo get_option('site_logo', base_url('uploads/app/XSiE8IvjO9M0XksmVYiPuqgU3gekwgGt.png')); ?>"
                  class="img-responsive">
         </div>
-        <p class="text-right pull-right">&copy; <?php echo date('Y') ?> <a target="_blank" href="https://bennito254.com"><?php echo get_option('site_name', 'Bennito254'); ?></a> <span>•</span> Version <?php echo get_option('_app_version', '0.0.1'); ?>
+        <p class="text-right pull-right">&copy; <?php echo date('Y') ?> <a target="_blank" href="https://bennito254.com"><?php echo get_option('site_name', 'Bennito254'); ?></a> <span>•</span> Version <?php echo get_option('_app_version', '1.0.1'); ?>
         </p>
     </footer>
 
@@ -325,8 +325,8 @@ $active_business = active_business();
 <script src="<?php echo base_url('assets/libs/bootstrap/js/bootstrap.min.js'); ?>"></script>
 <script src="<?php echo base_url('assets/libs/daterangepicker/daterangepicker.js'); ?>"></script>
 <script src="<?php echo base_url('assets/js/jquery.slimscroll.min.js'); ?>"></script>
-<script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.min.js"></script>
+<script src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+<script src="//cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.min.js"></script>
 <script src="//cdn.datatables.net/buttons/1.4.2/js/buttons.flash.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/pdfmake.min.js"></script>

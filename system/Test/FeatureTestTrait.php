@@ -1,40 +1,12 @@
 <?php
 
 /**
- * CodeIgniter
+ * This file is part of the CodeIgniter 4 framework.
  *
- * An open source application development framework for PHP
+ * (c) CodeIgniter Foundation <admin@codeigniter.com>
  *
- * This content is released under the MIT License (MIT)
- *
- * Copyright (c) 2014-2019 British Columbia Institute of Technology
- * Copyright (c) 2019-2020 CodeIgniter Foundation
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * @package    CodeIgniter
- * @author     CodeIgniter Dev Team
- * @copyright  2019-2020 CodeIgniter Foundation
- * @license    https://opensource.org/licenses/MIT	MIT License
- * @link       https://codeigniter.com
- * @since      Version 4.0.0
- * @filesource
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace CodeIgniter\Test;
@@ -44,16 +16,17 @@ use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\Request;
 use CodeIgniter\HTTP\URI;
 use CodeIgniter\HTTP\UserAgent;
+use CodeIgniter\Router\Exceptions\RedirectException;
 use Config\App;
 use Config\Services;
+use Exception;
+use ReflectionException;
 
 /**
  * Trait FeatureTestTrait
  *
  * Provides additional utilities for doing full HTTP testing
  * against your application in trait format.
- *
- * @package CodeIgniter\Test
  */
 trait FeatureTestTrait
 {
@@ -122,6 +95,32 @@ trait FeatureTestTrait
 	}
 
 	/**
+	 * Set the format the request's body should have.
+	 *
+	 * @param  string $format The desired format. Currently supported formats: xml, json
+	 * @return $this
+	 */
+	public function withBodyFormat(string $format)
+	{
+		$this->bodyFormat = $format;
+
+		return $this;
+	}
+
+	/**
+	 * Set the raw body for the request
+	 *
+	 * @param  mixed $body
+	 * @return $this
+	 */
+	public function withBody($body)
+	{
+		$this->requestBody = $body;
+
+		return $this;
+	}
+
+	/**
 	 * Don't run any events while running this test.
 	 *
 	 * @return $this
@@ -141,9 +140,9 @@ trait FeatureTestTrait
 	 * @param string     $path
 	 * @param array|null $params
 	 *
-	 * @return \CodeIgniter\Test\FeatureResponse
-	 * @throws \CodeIgniter\Router\Exceptions\RedirectException
-	 * @throws \Exception
+	 * @return FeatureResponse
+	 * @throws RedirectException
+	 * @throws Exception
 	 */
 	public function call(string $method, string $path, array $params = null)
 	{
@@ -165,6 +164,7 @@ trait FeatureTestTrait
 		$request = $this->setupRequest($method, $path);
 		$request = $this->setupHeaders($request);
 		$request = $this->populateGlobals($method, $request, $params);
+		$request = $this->setRequestBody($request);
 
 		// Make sure the RouteCollection knows what method we're using...
 		$routes = $this->routes ?? Services::routes();
@@ -211,9 +211,9 @@ trait FeatureTestTrait
 	 * @param string     $path
 	 * @param array|null $params
 	 *
-	 * @return \CodeIgniter\Test\FeatureResponse
-	 * @throws \CodeIgniter\Router\Exceptions\RedirectException
-	 * @throws \Exception
+	 * @return FeatureResponse
+	 * @throws RedirectException
+	 * @throws Exception
 	 */
 	public function get(string $path, array $params = null)
 	{
@@ -226,9 +226,9 @@ trait FeatureTestTrait
 	 * @param string     $path
 	 * @param array|null $params
 	 *
-	 * @return \CodeIgniter\Test\FeatureResponse
-	 * @throws \CodeIgniter\Router\Exceptions\RedirectException
-	 * @throws \Exception
+	 * @return FeatureResponse
+	 * @throws RedirectException
+	 * @throws Exception
 	 */
 	public function post(string $path, array $params = null)
 	{
@@ -241,9 +241,9 @@ trait FeatureTestTrait
 	 * @param string     $path
 	 * @param array|null $params
 	 *
-	 * @return \CodeIgniter\Test\FeatureResponse
-	 * @throws \CodeIgniter\Router\Exceptions\RedirectException
-	 * @throws \Exception
+	 * @return FeatureResponse
+	 * @throws RedirectException
+	 * @throws Exception
 	 */
 	public function put(string $path, array $params = null)
 	{
@@ -256,9 +256,9 @@ trait FeatureTestTrait
 	 * @param string     $path
 	 * @param array|null $params
 	 *
-	 * @return \CodeIgniter\Test\FeatureResponse
-	 * @throws \CodeIgniter\Router\Exceptions\RedirectException
-	 * @throws \Exception
+	 * @return FeatureResponse
+	 * @throws RedirectException
+	 * @throws Exception
 	 */
 	public function patch(string $path, array $params = null)
 	{
@@ -271,9 +271,9 @@ trait FeatureTestTrait
 	 * @param string     $path
 	 * @param array|null $params
 	 *
-	 * @return \CodeIgniter\Test\FeatureResponse
-	 * @throws \CodeIgniter\Router\Exceptions\RedirectException
-	 * @throws \Exception
+	 * @return FeatureResponse
+	 * @throws RedirectException
+	 * @throws Exception
 	 */
 	public function delete(string $path, array $params = null)
 	{
@@ -286,9 +286,9 @@ trait FeatureTestTrait
 	 * @param string     $path
 	 * @param array|null $params
 	 *
-	 * @return \CodeIgniter\Test\FeatureResponse
-	 * @throws \CodeIgniter\Router\Exceptions\RedirectException
-	 * @throws \Exception
+	 * @return FeatureResponse
+	 * @throws RedirectException
+	 * @throws Exception
 	 */
 	public function options(string $path, array $params = null)
 	{
@@ -302,7 +302,7 @@ trait FeatureTestTrait
 	 * @param string      $method
 	 * @param string|null $path
 	 *
-	 * @return \CodeIgniter\HTTP\IncomingRequest
+	 * @return IncomingRequest
 	 */
 	protected function setupRequest(string $method, string $path = null): IncomingRequest
 	{
@@ -326,9 +326,9 @@ trait FeatureTestTrait
 	/**
 	 * Setup the custom request's headers
 	 *
-	 * @param \CodeIgniter\HTTP\IncomingRequest $request
+	 * @param IncomingRequest $request
 	 *
-	 * @return \CodeIgniter\HTTP\IncomingRequest
+	 * @return IncomingRequest
 	 */
 	protected function setupHeaders(IncomingRequest $request)
 	{
@@ -349,12 +349,12 @@ trait FeatureTestTrait
 	 *
 	 * Always populate the GET vars based on the URI.
 	 *
-	 * @param string                    $method
-	 * @param \CodeIgniter\HTTP\Request $request
-	 * @param array|null                $params
+	 * @param string     $method
+	 * @param Request    $request
+	 * @param array|null $params
 	 *
-	 * @return \CodeIgniter\HTTP\Request
-	 * @throws \ReflectionException
+	 * @return Request
+	 * @throws ReflectionException
 	 */
 	protected function populateGlobals(string $method, Request $request, array $params = null)
 	{
@@ -373,6 +373,50 @@ trait FeatureTestTrait
 		$request->setGlobal('request', $params);
 
 		$_SESSION = $this->session ?? [];
+
+		return $request;
+	}
+
+	/**
+	 * Set the request's body formatted according to the value in $this->bodyFormat.
+	 * This allows the body to be formatted in a way that the controller is going to
+	 * expect as in the case of testing a JSON or XML API.
+	 *
+	 * @param  Request    $request
+	 * @param  null|array $params  The parameters to be formatted and put in the body. If this is empty, it will get the
+	 *                               what has been loaded into the request global of the request class.
+	 * @return Request
+	 */
+	protected function setRequestBody(Request $request, array $params = null): Request
+	{
+		if (isset($this->requestBody) && $this->requestBody !== '')
+		{
+			$request->setBody($this->requestBody);
+			return $request;
+		}
+
+		if (isset($this->bodyFormat) && $this->bodyFormat !== '')
+		{
+			if (empty($params))
+			{
+				$params = $request->fetchGlobal('request');
+			}
+			$formatMime = '';
+			if ($this->bodyFormat === 'json')
+			{
+				$formatMime = 'application/json';
+			}
+			elseif ($this->bodyFormat === 'xml')
+			{
+				$formatMime = 'application/xml';
+			}
+			if (! empty($formatMime) && ! empty($params))
+			{
+				$formatted = Services::format()->getFormatter($formatMime)->format($params);
+				$request->setBody($formatted);
+				$request->setHeader('Content-Type', $formatMime);
+			}
+		}
 
 		return $request;
 	}

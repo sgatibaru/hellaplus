@@ -1,40 +1,12 @@
 <?php
 
 /**
- * CodeIgniter
+ * This file is part of the CodeIgniter 4 framework.
  *
- * An open source application development framework for PHP
+ * (c) CodeIgniter Foundation <admin@codeigniter.com>
  *
- * This content is released under the MIT License (MIT)
- *
- * Copyright (c) 2014-2019 British Columbia Institute of Technology
- * Copyright (c) 2019-2020 CodeIgniter Foundation
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * @package    CodeIgniter
- * @author     CodeIgniter Dev Team
- * @copyright  2019-2020 CodeIgniter Foundation
- * @license    https://opensource.org/licenses/MIT	MIT License
- * @link       https://codeigniter.com
- * @since      Version 4.0.0
- * @filesource
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace CodeIgniter\Filters;
@@ -42,15 +14,15 @@ namespace CodeIgniter\Filters;
 use CodeIgniter\Filters\Exceptions\FilterException;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use Config\Services;
+use Config\Filters as FiltersConfig;
 use Config\Modules;
+use Config\Services;
 
 /**
  * Filters
  */
 class Filters
 {
-
 	/**
 	 * The processed filters that will
 	 * be used to check against.
@@ -83,7 +55,7 @@ class Filters
 	/**
 	 * The original config file
 	 *
-	 * @var \Config\Filters
+	 * @var FiltersConfig
 	 */
 	protected $config;
 
@@ -119,17 +91,17 @@ class Filters
 	/**
 	 * Handle to the modules config.
 	 *
-	 * @var \Config\Modules
+	 * @var Modules
 	 */
 	protected $modules;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param \Config\Filters      $config
-	 * @param RequestInterface     $request
-	 * @param ResponseInterface    $response
-	 * @param \Config\Modules|null $modules
+	 * @param FiltersConfig     $config
+	 * @param RequestInterface  $request
+	 * @param ResponseInterface $response
+	 * @param Modules|null      $modules
 	 */
 	public function __construct($config, RequestInterface $request, ResponseInterface $response, Modules $modules = null)
 	{
@@ -188,8 +160,8 @@ class Filters
 	 * @param string $uri
 	 * @param string $position
 	 *
-	 * @return \CodeIgniter\HTTP\RequestInterface|\CodeIgniter\HTTP\ResponseInterface|mixed
-	 * @throws \CodeIgniter\Filters\Exceptions\FilterException
+	 * @return RequestInterface|ResponseInterface|mixed
+	 * @throws FilterException
 	 */
 	public function run(string $uri, string $position = 'before')
 	{
@@ -285,7 +257,7 @@ class Filters
 			$this->filters['after'][$count - 1] !== 'toolbar'
 		)
 		{
-			array_splice($this->filters['after'], array_search('toolbar', $this->filters['after']), 1);
+			array_splice($this->filters['after'], array_search('toolbar', $this->filters['after'], true), 1);
 			$this->filters['after'][] = 'toolbar';
 		}
 
@@ -360,7 +332,7 @@ class Filters
 	 * @param string $name
 	 * @param string $when
 	 *
-	 * @return \CodeIgniter\Filters\Filters
+	 * @return Filters
 	 */
 	public function enableFilter(string $name, string $when = 'before')
 	{
@@ -472,7 +444,7 @@ class Filters
 	}
 
 	/**
-	 * Add any method-specific flters to the mix.
+	 * Add any method-specific filters to the mix.
 	 *
 	 * @return void
 	 */
@@ -536,6 +508,7 @@ class Filters
 	/**
 	 * Maps filter aliases to the equivalent filter classes
 	 *
+	 * @param  string $position
 	 * @throws FilterException
 	 *
 	 * @return void
@@ -563,6 +536,11 @@ class Filters
 				$this->filtersClass[$position][] = $this->config->aliases[$alias];
 			}
 		}
+
+		// when using enableFilter() we already write the class name in ->filtersClass as well as the
+		// alias in ->filters. This leads to duplicates when using route filters.
+		// Since some filters like rate limiters rely on being executed once a request we filter em here.
+		$this->filtersClass[$position] = array_unique($this->filtersClass[$position]);
 	}
 
 	/**

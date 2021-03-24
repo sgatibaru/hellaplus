@@ -96,7 +96,7 @@ $routes->group('admin', function ($routes) {
 
 $routes->group('api', function ($routes) {
     $routes->post('confirm/(:any)/(:any)', '\App\Controllers\Api::confirm/$1/$2', ['as' => 'api.confirm']);
-    $routes->post('validate/(:any)/(:any)', '\App\Controllers\Api::validation/$1/$2', ['as' => 'api.validate']);
+    $routes->post('validation/(:any)/(:any)', '\App\Controllers\Api::validation/$1/$2', ['as' => 'api.validate']);
     $routes->post('balanceurl/(:any)/(:any)', '\App\Controllers\Api::balance_url/$1/$2', ['as' => 'api.balanceurl']);
     $routes->post('reversalurl/(:any)/(:any)', '\App\Controllers\Api::reversal_url/$1/$2', ['as' => 'api.reversalurl']);
     $routes->post('resulturl/(:any)/(:any)', '\App\Controllers\Api::result_url/$1/$2', ['as' => 'api.resulturl']);

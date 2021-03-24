@@ -1,39 +1,12 @@
 <?php
+
 /**
- * CodeIgniter
+ * This file is part of the CodeIgniter 4 framework.
  *
- * An open source application development framework for PHP
+ * (c) CodeIgniter Foundation <admin@codeigniter.com>
  *
- * This content is released under the MIT License (MIT)
- *
- * Copyright (c) 2014-2019 British Columbia Institute of Technology
- * Copyright (c) 2019-2020 CodeIgniter Foundation
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * @package    CodeIgniter
- * @author     CodeIgniter Dev Team
- * @copyright  2019-2020 CodeIgniter Foundation
- * @license    https://opensource.org/licenses/MIT	MIT License
- * @link       https://codeigniter.com
- * @since      Version 4.0.0
- * @filesource
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace CodeIgniter\Database;
@@ -41,15 +14,17 @@ namespace CodeIgniter\Database;
 use CodeIgniter\CLI\CLI;
 use CodeIgniter\Events\Events;
 use CodeIgniter\Exceptions\ConfigException;
+use Config\Database;
 use Config\Migrations as MigrationsConfig;
 use Config\Services;
+use RuntimeException;
+use stdClass;
 
 /**
  * Class MigrationRunner
  */
 class MigrationRunner
 {
-
 	/**
 	 * Whether or not migrations are allowed to run.
 	 *
@@ -96,7 +71,7 @@ class MigrationRunner
 	 * The main database connection. Used to store
 	 * migration information in.
 	 *
-	 * @var ConnectionInterface
+	 * @var BaseConnection
 	 */
 	protected $db;
 
@@ -144,8 +119,6 @@ class MigrationRunner
 	 */
 	protected $groupSkip = false;
 
-	//--------------------------------------------------------------------
-
 	/**
 	 * Constructor.
 	 *
@@ -154,8 +127,8 @@ class MigrationRunner
 	 * - existing connection instance
 	 * - array of database configuration values
 	 *
-	 * @param MigrationsConfig                                       $config
-	 * @param \CodeIgniter\Database\ConnectionInterface|array|string $db
+	 * @param MigrationsConfig                      $config
+	 * @param ConnectionInterface|array|string|null $db
 	 *
 	 * @throws ConfigException
 	 */
@@ -183,6 +156,11 @@ class MigrationRunner
 	 * Locate and run all new migrations
 	 *
 	 * @param string|null $group
+	 *
+	 * @throws ConfigException
+	 * @throws RuntimeException
+	 *
+	 * @return boolean
 	 */
 	public function latest(string $group = null)
 	{
@@ -210,7 +188,7 @@ class MigrationRunner
 		}
 
 		// Remove any migrations already in the history
-		foreach ($this->getHistory($this->group) as $history)
+		foreach ($this->getHistory((string) $group) as $history)
 		{
 			unset($migrations[$this->getObjectUid($history)]);
 		}
@@ -243,7 +221,8 @@ class MigrationRunner
 					$this->cliMessages[] = "\t" . CLI::color($message, 'red');
 					return false;
 				}
-				throw new \RuntimeException($message);
+
+				throw new RuntimeException($message);
 			}
 		}
 
@@ -264,8 +243,10 @@ class MigrationRunner
 	 * @param integer     $targetBatch Target batch number, or negative for a relative batch, 0 for all
 	 * @param string|null $group
 	 *
-	 * @return mixed Current batch number on success, FALSE on failure or no migrations are found
 	 * @throws ConfigException
+	 * @throws RuntimeException
+	 *
+	 * @return mixed Current batch number on success, FALSE on failure or no migrations are found
 	 */
 	public function regress(int $targetBatch = 0, string $group = null)
 	{
@@ -307,7 +288,8 @@ class MigrationRunner
 				$this->cliMessages[] = "\t" . CLI::color($message, 'red');
 				return false;
 			}
-			throw new \RuntimeException($message);
+
+			throw new RuntimeException($message);
 		}
 
 		// Save the namespace to restore it after loading migrations
@@ -319,6 +301,7 @@ class MigrationRunner
 
 		// Gather migrations down through each batch until reaching the target
 		$migrations = [];
+
 		while ($batch = array_pop($batches))
 		{
 			// Check if reached target
@@ -343,7 +326,8 @@ class MigrationRunner
 						$this->cliMessages[] = "\t" . CLI::color($message, 'red');
 						return false;
 					}
-					throw new \RuntimeException($message);
+
+					throw new RuntimeException($message);
 				}
 
 				// Add the history and put it on the list
@@ -370,7 +354,8 @@ class MigrationRunner
 					$this->cliMessages[] = "\t" . CLI::color($message, 'red');
 					return false;
 				}
-				throw new \RuntimeException($message);
+
+				throw new RuntimeException($message);
 			}
 		}
 
@@ -422,7 +407,7 @@ class MigrationRunner
 				$this->cliMessages[] = "\t" . CLI::color($message, 'red');
 				return false;
 			}
-			throw new \RuntimeException($message);
+			throw new RuntimeException($message);
 		}
 
 		// Check the history for a match
@@ -468,7 +453,7 @@ class MigrationRunner
 			$this->cliMessages[] = "\t" . CLI::color($message, 'red');
 			return false;
 		}
-		throw new \RuntimeException($message);
+		throw new RuntimeException($message);
 	}
 
 	//--------------------------------------------------------------------
@@ -572,7 +557,7 @@ class MigrationRunner
 		$locator = Services::locator(true);
 
 		// Create migration object using stdClass
-		$migration = new \stdClass();
+		$migration = new stdClass();
 
 		// Get migration version number
 		$migration->version   = $this->getMigrationNumber($name);
@@ -626,7 +611,7 @@ class MigrationRunner
 	 *
 	 * @param string $name
 	 *
-	 * @return \CodeIgniter\Database\MigrationRunner
+	 * @return MigrationRunner
 	 */
 	public function setName(string $name)
 	{
@@ -737,8 +722,7 @@ class MigrationRunner
 	{
 		if ($this->db->tableExists($this->table))
 		{
-			$this->db->table($this->table)
-					 ->truncate();
+			$this->db->table($this->table)->truncate();
 		}
 	}
 
@@ -804,18 +788,21 @@ class MigrationRunner
 	{
 		$this->ensureTable();
 
-		$criteria = ['group' => $group];
+		$builder = $this->db->table($this->table);
+
+		// If group was specified then use it
+		if (! empty($group))
+		{
+			$builder->where('group', $group);
+		}
 
 		// If a namespace was specified then use it
 		if ($this->namespace)
 		{
-			$criteria['namespace'] = $this->namespace;
+			$builder->where('namespace', $this->namespace);
 		}
 
-		$query = $this->db->table($this->table)
-						  ->where($criteria)
-						  ->orderBy('id', 'ASC')
-						  ->get();
+		$query = $builder->orderBy('id', 'ASC')->get();
 
 		return ! empty($query) ? $query->getResultObject() : [];
 	}
@@ -882,7 +869,7 @@ class MigrationRunner
 			? end($batch)->batch
 			: 0;
 
-		return (int)$batch;
+		return (int) $batch;
 	}
 
 	//--------------------------------------------------------------------
@@ -956,7 +943,7 @@ class MigrationRunner
 			return;
 		}
 
-		$forge = \Config\Database::forge($this->db);
+		$forge = Database::forge($this->db);
 
 		$forge->addField([
 			'id'        => [
@@ -971,8 +958,9 @@ class MigrationRunner
 				'null'       => false,
 			],
 			'class'     => [
-				'type' => 'TEXT',
-				'null' => false,
+				'type'       => 'VARCHAR',
+				'constraint' => 255,
+				'null'       => false,
 			],
 			'group'     => [
 				'type'       => 'VARCHAR',
@@ -1028,7 +1016,7 @@ class MigrationRunner
 				$this->cliMessages[] = "\t" . CLI::color($message, 'red');
 				return false;
 			}
-			throw new \RuntimeException($message);
+			throw new RuntimeException($message);
 		}
 
 		// Initialize migration
@@ -1063,7 +1051,7 @@ class MigrationRunner
 				$this->cliMessages[] = "\t" . CLI::color($message, 'red');
 				return false;
 			}
-			throw new \RuntimeException($message);
+			throw new RuntimeException($message);
 		}
 
 		$instance->{$direction}();

@@ -1,8 +1,21 @@
-<?php namespace CodeIgniter\Test\Mock;
+<?php
 
-class MockCLIConfig extends \Config\App
+/**
+ * This file is part of the CodeIgniter 4 framework.
+ *
+ * (c) CodeIgniter Foundation <admin@codeigniter.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace CodeIgniter\Test\Mock;
+
+use Config\App;
+
+class MockCLIConfig extends App
 {
-	public $baseURL = 'http://example.com';
+	public $baseURL = 'http://example.com/';
 
 	public $uriProtocol = 'REQUEST_URI';
 

@@ -1,44 +1,18 @@
 <?php
 
 /**
- * CodeIgniter
+ * This file is part of the CodeIgniter 4 framework.
  *
- * An open source application development framework for PHP
+ * (c) CodeIgniter Foundation <admin@codeigniter.com>
  *
- * This content is released under the MIT License (MIT)
- *
- * Copyright (c) 2014-2019 British Columbia Institute of Technology
- * Copyright (c) 2019-2020 CodeIgniter Foundation
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * @package    CodeIgniter
- * @author     CodeIgniter Dev Team
- * @copyright  2019-2020 CodeIgniter Foundation
- * @license    https://opensource.org/licenses/MIT	MIT License
- * @link       https://codeigniter.com
- * @since      Version 4.0.0
- * @filesource
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace CodeIgniter\API;
 
+use CodeIgniter\Format\FormatterInterface;
+use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\Response;
 use Config\Services;
 
@@ -49,10 +23,8 @@ use Config\Services;
  * consistent HTTP responses under a variety of common
  * situations when working as an API.
  *
- * @property \CodeIgniter\HTTP\IncomingRequest $request
- * @property \CodeIgniter\HTTP\Response        $response
- *
- * @package CodeIgniter\API
+ * @property IncomingRequest $request
+ * @property Response        $response
  */
 trait ResponseTrait
 {
@@ -105,7 +77,7 @@ trait ResponseTrait
 	/**
 	 * Current Formatter instance. This is usually set by ResponseTrait::format
 	 *
-	 * @var \CodeIgniter\Format\FormatterInterface
+	 * @var FormatterInterface
 	 */
 	protected $formatter;
 
@@ -140,6 +112,19 @@ trait ResponseTrait
 		{
 			$status = empty($status) ? 200 : $status;
 			$output = $this->format($data);
+		}
+
+		if (! is_null($output))
+		{
+			if ($this->format === 'json')
+			{
+				return $this->response->setJSON($output)->setStatusCode($status, $message);
+			}
+
+			if ($this->format === 'xml')
+			{
+				return $this->response->setXML($output)->setStatusCode($status, $message);
+			}
 		}
 
 		return $this->response->setBody($output)->setStatusCode($status, $message);
@@ -389,6 +374,7 @@ trait ResponseTrait
 			$contentType = str_replace('application/json', 'text/html', $contentType);
 			$contentType = str_replace('application/', 'text/', $contentType);
 			$this->response->setContentType($contentType);
+			$this->format = 'html';
 
 			return $data;
 		}
