@@ -34,8 +34,10 @@ class Api extends BaseController
             $mpesa->consumer_key = $business->consumer_key;
             $mpesa->consumer_secret = $business->consumer_secret;
 
-            $mpesa->confirmation_url = site_url('api/confirm/'.$business->shortcode.'/'.md5(trim($business->shortcode)),'https'); //C2B confirmation URL
-            $mpesa->validation_url = site_url('api/validation/'.$business->shortcode.'/'.md5(trim($business->shortcode)),'https');; //C2B validation URL
+            $key = getenv('MPESA_KEY') ? getenv('MPESA_KEY') : md5(trim($business->shortcode));
+
+            $mpesa->confirmation_url = site_url('api/confirm/'.$business->shortcode.'/'.$key,'https'); //C2B confirmation URL
+            $mpesa->validation_url = site_url('api/validation/'.$business->shortcode.'/'.$key,'https');; //C2B validation URL
 
             $resp = $mpesa->c2b();
             if($res = json_decode($resp)) {
@@ -78,7 +80,9 @@ class Api extends BaseController
     public function confirm($shortcode, $key){
         $data = file_get_contents('php://input');
 
-        if ($key == md5(trim($shortcode))) {
+        $existingKey = getenv('MPESA_KEY') ? getenv('MPESA_KEY') : md5(trim($shortcode));
+
+        if ($key == $existingKey) {
             if($data = json_decode($data)) {
                 $to_db = [
                     'shortcode'     => $shortcode,

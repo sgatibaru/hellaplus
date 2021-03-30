@@ -5,8 +5,20 @@ if(file_exists('../env.php')){
 }
 error_reporting(0);
 session_start();
-function generateRandomString($length = 32) {
+function generateRandomString($length = 32): string
+{
     $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!-+=@#$%^&*.,:';
+    $charactersLength = strlen($characters);
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++) {
+        $randomString .= $characters[rand(0, $charactersLength - 1)];
+    }
+    return $randomString;
+}
+
+function generateKeyString($length = 32): string
+{
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_';
     $charactersLength = strlen($characters);
     $randomString = '';
     for ($i = 0; $i < $length; $i++) {
@@ -243,6 +255,7 @@ CI_ENVIRONMENT = production
 app.baseURL = ".$url."
 app.indexPage =
 encryption.key = ".generateRandomString(32)."
+MPESA_KEY = ".generateKeyString(8)."
 
 database.default.hostname = ".$_SESSION['database']['server']."
 database.default.database = ".$_SESSION['database']['database']."
